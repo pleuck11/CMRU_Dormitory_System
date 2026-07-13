@@ -1,0 +1,28 @@
+{
+  "name": "Yayee Dormitory Management System",
+  "short_name": "Yayee Dorm",
+  "description": "ระบบบริหารจัดการหอพักหยาหยี๋ออนไลน์ สำหรับผู้เช่าและผู้ดูแล ระบบจอดรถและบิลอัตโนมัติ",
+  "start_url": "/auth/login",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#734A2E",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/history_bills/page.tsx:13:  paidAt: string; // วันที่ชำระ
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/history_bills/page.tsx:18:// ตัวอย่างข้อมูลจำลอง (ให้ต่อ Firestore ในภายหลัง)
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/history_bills/page.tsx:37:  // กรองข้อมูล
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/page.tsx:31:  // ห้องที่มีสถานะ "มีผู้เช่า"
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/page.tsx:35:  // ข้อมูลฟอร์มสร้างบิล
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/page.tsx:44:  // คำนวณยอดรวมทั้งหมดอัตโนมัติ
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/page.tsx:58:  // ดึงห้องที่มีผู้เช่าจาก Firestore
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/page.tsx:71:      // จัดเรียงตามตึกและหมายเลขห้อง
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/page.tsx:87:    // รีเซ็ตฟอร์มและดึงข้อมูลห้องใหม่
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/page.tsx:101:  // เมื่อเลือกห้อง ให้ดึงราคาเช่าอัตโนมัติ
+g:/Github/CMRU_Dormitory_System/app/admin/bills_payments/page.tsx:123:    // 👉 ตรงนี้เอาไว้ต่อ Firebase ภายหลัง
+g:/Github/CMRU_Dormitory_System/app/admin/dashboard/page.tsx:30:        // ดึงสถิติจริงจาก Firestore ที่นี่
+g:/Github/CMRU_Dormitory_System/app/admin/dashboard/page.tsx:32:        // ตัวอย่าง: นับจำนวนการแจ้งซ่อมทั้งหมด
+g:/Github/CMRU_Dormitory_System/app/admin/dashboard/page.tsx:44:        // ดึงข้อมูลการแจ้งซ่อมล่าสุด
+g:/Github/CMRU_Dormitory_System/app/admin/dashboard/page.tsx:45:        const repairsQuery = query(repairsCol); // เพิ่มการเรียงลำดับเวลา (orderBy) เมื่อมีฟิลด์ timestamp
+g:/Github/CMRU_Dormitory_System/app/admin/manage_tenants/history_tenants/page.tsx:28:        // ดึงผู้ใช้ที่มีสถานะ moved_out หรือ isDeleted == true
+g:/Github/CMRU_Dormitory_System/app/admin/manage_tenants/history_tenants/page.tsx:29:        // แต่ใน Firebase Firestore เราอาจจะใช้ multiple where queries ค่อนข้างยากถ้ามันเป็น OR
+g:/Github/CMRU_Dormitory_System/app/admin/manage_tenants/history_tenants/page.tsx:30:        // เพื่อให้ง่าย, เราดึง role == "tenant" หรือ role == "user" มา กรองในฝั่ง client 
+g:/Github/CMRU_Dormitory_System/app/admin/manage_tenants/history_tenants/page.tsx:31:        // หรือจะสร้าง query เฉพาะ 
+g:/Github/CMRU_Dormitory_System/app/admin/manage_tenants/history_tenants/page.tsx:38:        // รวมผู้ใช้ เพื่อป้องกันการซ้ำ
+g:/Github/CMRU_Dormitory_System/app/admin/manage_tenants/history_tenants/page.tsx:60:        // เรียงลำดับตามเวลาล่าสุด
+g:/Github/CMRU_Dormitory_System/app/admin/manage_tenants/page.tsx:72:                moveInDate: moveInDateFormatted, // วันที่เข้าพักดึงจากตอนอนุมัติ
+g:/Github/CMRU_Dormitory_System/app/admin/manage_tenants/page.tsx:101:      // 1. อัปเดตสถานะห้องให้เป็น "ว่าง" และลบ tenantId
+g:/Github/CMRU_Dormitory_System/app/admin/manage_tenants/page.tsx:111:      // 2. อัปเดตข้อมูลผู้ใช้ เพิ่มสถานะว่าย้ายออกแล้ว และเก็บห้องล่าสุดไว้ประวัติ
+g:/Github/CMRU_Dormitory_System/app/admin/manage_tenants/page.tsx:123:      // ลบออกจาก state ทันทีจะได้ไม่ต้องโหลดใหม่ทั้งหมด
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:16:  image?: string; // URL รูปภาพ (ไม่ต้องระบุก็ได้)
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:23:  // สถานะของหน้าต่างป๊อปอัป (Modal)
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:28:  // สถานะของฟอร์มกรอกข้อมูล
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:44:      // ดึงข้อมูลห้องทั้งหมดโดยไม่เรียงลำดับเพื่อหลีกเลี่ยงการใช้ index พิเศษ (composite index)
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:52:      // จัดเรียงลำดับด้วยโค้ด Javascript แทน: ตึกก่อน จากนั้นจัดเรียงหมายเลขห้องแบบตัวเลข
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:124:      // ตรวจสอบให้แน่ใจว่ามีการระบุตึกและหมายเลขห้องเพื่อสร้างชื่อไฟล์ที่ไม่ซ้ำกัน
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:129:      // อัปโหลดรูปภาพใหม่ หากมีการเลือกไฟล์รูป
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:145:        // อัปเดตข้อมูล
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:149:        // สร้างข้อมูลใหม่
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:153:      fetchRooms(); // โหลดข้อมูลห้องใหม่หลังจากบันทึก
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:166:        fetchRooms(); // โหลดข้อมูลใหม่หลังจากลบสำเร็จ
+g:/Github/CMRU_Dormitory_System/app/admin/rooms/page.tsx:174:  // ฟังก์ชันช่วยกำหนดสีสถานะห้อง
+g:/Github/CMRU_Dormitory_System/app/admin/room_requests/page.tsx:15:  createdAt: number | Date | { toDate: () => Date } | any; // ใช้ 'any' เฉพาะเมื่อจำเป็นเท่านั้น, แต่โดยปกติแล้ว Firebase Timestamp สามารถทำงานได้ดี
+g:/Github/CMRU_Dormitory_System/app/admin/room_requests/page.tsx:35:      // รวบรวมข้อมูลคำขอและเก็บ tenantId ไว้ดึงพร้อมกันทีเดียว
+g:/Github/CMRU_Dormitory_System/app/admin/room_requests/page.tsx:44:      // ดึงข้อมูลผู้ใช้ (Tenants) ที่เกี่ยวข้องทั้งหมด (ใช้ In-query แบบแบ่ง 10 ตามข้อจำกัด Firestore)
+g:/Github/CMRU_Dormitory_System/app/admin/room_requests/page.tsx:60:      // นำข้อมูลผู้ใช้มาประกอบร่างกับคำขอ
+g:/Github/CMRU_Dormitory_System/app/admin/room_requests/page.tsx:88:      // 1. อัปเดตสถานะคำขอเป็น approved
+g:/Github/CMRU_Dormitory_System/app/admin/room_requests/page.tsx:91:      // 2. อัปเดตห้องพักเป็น มีผู้เช่า และผูก tenantId
+g:/Github/CMRU_Dormitory_System/app/admin/room_requests/page.tsx:98:      // 3. (Optional) อัปเดตข้อมูลผู้ใช้ว่ามีห้องแล้ว หรือเปลี่ยน role เป็นผู้เช่าเต็มตัว (ถ้ามีการจัดแยก)
+g:/Github/CMRU_Dormitory_System/app/auth/action/page.tsx:23:    // Firebase จะส่งโหมด (mode) และรหัสยืนยัน (oobCode) มาทาง URL
+g:/Github/CMRU_Dormitory_System/app/auth/action/page.tsx:29:      // ตรวจสอบว่า Code ถูกต้องและยังไม่หมดอายุ
+g:/Github/CMRU_Dormitory_System/app/auth/forgot-password/page.tsx:27:      // ตอนที่คลิกลิงก์ในอีเมล จะวิ่งมาหา URL นี้แทนหน้า Firebase ปกติ
+g:/Github/CMRU_Dormitory_System/app/auth/forgot-password/page.tsx:30:        handleCodeInApp: false, // false เพราะต้องการให้ลิงก์เปิดหน้าเว็บ ไม่ใช่บนแอปพลิเคชันมือถือ
+g:/Github/CMRU_Dormitory_System/app/auth/forgot-password/page.tsx:38:      // แจ้งเตือน 'auth/user-not-found' กรณีที่อีเมลไม่ถูกต้อง หรือเกิดข้อผิดพลาดอื่นๆ
+g:/Github/CMRU_Dormitory_System/app/auth/login/page.tsx:35:      // ผู้ใช้จะถูกเปลี่ยนหน้าอัตโนมัติ(redirect) ผ่าน useEffect
+g:/Github/CMRU_Dormitory_System/app/auth/register/page.tsx:46:      // 1. สร้างผู้ใช้ในระบ Authentication ของ Firebase
+g:/Github/CMRU_Dormitory_System/app/auth/register/page.tsx:50:      // 2. อัปเดตโปรไฟล์ชื่อผู้ใช้
+g:/Github/CMRU_Dormitory_System/app/auth/register/page.tsx:55:      // 3. บันทึกข้อมูลผู้ใช้เพิ่มเติมลงในฐานข้อมูล Firestore
+g:/Github/CMRU_Dormitory_System/app/auth/register/page.tsx:61:        role: "tenant", // กำหนดบทบาทเริ่มต้นเป็นผู้เช่า
+g:/Github/CMRU_Dormitory_System/app/auth/register/page.tsx:65:      // ผู้ใช้จะถูกเปลี่ยนหน้าอัตโนมัติ(redirect) ผ่าน useEffect
+g:/Github/CMRU_Dormitory_System/app/tenant/dashboard/page.tsx:45:          // ดึงข้อมูลห้อง
+g:/Github/CMRU_Dormitory_System/app/tenant/dashboard/page.tsx:59:          // ดึงบิลค่าเช่า
+g:/Github/CMRU_Dormitory_System/app/tenant/dashboard/page.tsx:73:          // ดึงรายการแจ้งซ่อม
+g:/Github/CMRU_Dormitory_System/app/tenant/layout.tsx:20:  // เปิด dropdown แจ้งซ่อมอัตโนมัติเมื่ออยู่ในหน้าแจ้งซ่อม
+g:/Github/CMRU_Dormitory_System/app/tenant/layout.tsx:24:  const [hasRoom, setHasRoom] = useState<boolean>(true); // ค่าเริ่มต้นเป็น true จะได้ไม่กระพริบซ่อนหากมีห้องพักอยู่แล้ว
+g:/Github/CMRU_Dormitory_System/app/tenant/layout.tsx:35:          // เช็คว่ามีห้องอยู่ไหม
+g:/Github/CMRU_Dormitory_System/app/tenant/profile/page.tsx:39:      // ดึงข้อมูลโปรไฟล์จาก users
+g:/Github/CMRU_Dormitory_System/app/tenant/profile/page.tsx:49:      // ดึงข้อมูลห้องจาก rooms (เหมือนแดชบอร์ด)
+g:/Github/CMRU_Dormitory_System/app/tenant/profile/page.tsx:76:  // อัปเดตเบอร์โทร
+g:/Github/CMRU_Dormitory_System/app/tenant/profile/page.tsx:128:  // ลบโปรไฟล์
+g:/Github/CMRU_Dormitory_System/app/tenant/profile/page.tsx:138:      // ลบแบบอ้อมใน Firestore (Soft delete)
+g:/Github/CMRU_Dormitory_System/app/tenant/profile/page.tsx:143:        tenantStatus: "moved_out" // ตรวจสอบให้แน่ใจว่าได้ระบุสถานะว่าย้ายออกแล้วด้วย
+g:/Github/CMRU_Dormitory_System/app/tenant/profile/page.tsx:146:      // แต่เราต้องเคลียร์ห้องด้วยถ้าเค้ายังอยู่
+g:/Github/CMRU_Dormitory_System/app/tenant/profile/page.tsx:158:      // ลบ account จาก authentication จริงๆ
+g:/Github/CMRU_Dormitory_System/app/tenant/repair/page.tsx:41:  // ฟังก์ชัน upload รูปภาพไป Firebase Storage และส่งข้อมูลไป Firestore
+g:/Github/CMRU_Dormitory_System/app/tenant/repair/page.tsx:56:      // ถ้ามีรูปภาพ ให้ upload ไป Firebase Storage ก่อน
+g:/Github/CMRU_Dormitory_System/app/tenant/repair/page.tsx:66:      // บันทึกข้อมูลลง Firestore พร้อม imageUrl
+g:/Github/CMRU_Dormitory_System/app/tenant/repair-history/page.tsx:24:// แปลง timestamp เป็นวันที่อ่านง่าย
+g:/Github/CMRU_Dormitory_System/app/tenant/repair-history/page.tsx:36:// แปลงเวลานัด datetime-local เป็นภาษาไทย
+g:/Github/CMRU_Dormitory_System/app/tenant/repair-history/page.tsx:49:// แสดง badge สถานะ
+g:/Github/CMRU_Dormitory_System/app/tenant/repair-history/page.tsx:87:    // รอให้ auth พร้อมก่อนดึงข้อมูล
+g:/Github/CMRU_Dormitory_System/app/tenant/room/page.tsx:61:      // ตรวจสอบก่อนว่าเคยจองห้องนี้และรอดำเนินการอยู่หรือไม่เพื่อป้องกันการกดซ้ำ
+g:/Github/CMRU_Dormitory_System/app/tenant/room/page.tsx:76:      // บันทึกคำขอจองห้อง

@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the authenticated user is an admin
+    function isAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'tenant') == 'admin';
+    }
+
+    // Tenants can read their own data, Admins can read/write everything
+    match /users/{userId} {
+      allow read, update: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    // Rooms can be read by anyone, but only modified by admins (and tenants can update status to "ติดจอง")
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) && request.resource.data.status == 'ติดจอง');
+    }
+
+    // Maintenance requests: Tenants can read/write their own, Admins full access
+    match /maintenance/{requestId} {
+      allow create: if isAuthenticated() && request.resource.data.tenantId == request.auth.uid;
+      allow read, update: if isAdmin() || (isAuthenticated() && resource.data.tenantId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // Repair requests: Tenants can create and read/update their own, Admins full access
+    match /repairs/{requestId} {
+      allow create: if isAuthenticated() && request.resource.data.tenantId == request.auth.uid;
+      allow read, update: if isAdmin() || (isAuthenticated() && resource.data.tenantId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // Bills: Tenants can read their own, Admins full access
+    match /bills/{billId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.tenantId == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // Room Requests: Tenants can create their own, and read to verify availability
+    match /room_requests/{requestId} {
+      allow create: if isAuthenticated() && request.resource.data.tenantId == request.auth.uid;
+      allow read: if isAuthenticated();
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.tenantId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slipUrl', 'idCardUrl', 'status']) && request.resource.data.status in ['pending', 'pending_docs', 'pending_approval']);
+      allow delete: if isAdmin();
+    }
+
+    // Post History / Scheduling (for admin dashboard, if used)
+    match /workspaces/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    match /schedules/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    match /settings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Bank account info: all authenticated users can read, only admins can write
+    match /bankAccount/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // FCM Push Notification Tokens: Each user can read/write their own token
+    match /fcm_tokens/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAdmin();
+    }
+
+    // Chat messages: ผู้เช่าอ่าน/เขียนได้เฉพาะห้องแชทของตัวเอง, admin อ่าน/เขียนได้ทุกห้อง
+    match /chats/{tenantId} {
+      allow read, write: if isAdmin() || (isAuthenticated() && request.auth.uid == tenantId);
+
+      match /messages/{messageId} {
+        allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == tenantId);
+        allow create: if isAdmin() || (isAuthenticated() && request.auth.uid == tenantId);
+        allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == tenantId);
+        allow update: if false;
+      }
+    }
+
+    // Meter Readings: Admins full access
+    match /meterReadings/{readingId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Default deny for everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

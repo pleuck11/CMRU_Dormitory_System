@@ -1,0 +1,22 @@
+﻿app\admin\chat\page.tsx: 
+/* Messages */
+app\admin\chat\page.tsx: 
+/* Input */
+app\auth\login\page.tsx: 
+/* Error */
+app\auth\login\page.tsx: 
+/* Email */
+app\auth\login\page.tsx: 
+/* Password */
+app\auth\login\page.tsx: 
+/* Remember me */
+app\auth\login\page.tsx: 
+/* Submit */
+app\auth\login\page.tsx: 
+/* Footer */
+app\auth\register\page.tsx: 
+/* Error */
+app\auth\register\page.tsx: 
+/* Submit */
+app\auth\register\page.tsx: 
+/* Footer */
