@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: NextRequest) {
   try {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      return NextResponse.json({ error: "RESEND_API_KEY is not configured" }, { status: 500 });
+    }
+    const resend = new Resend(resendApiKey);
+
     const { email } = await req.json();
 
     if (!email) {
