@@ -152,6 +152,11 @@ html, body {
   -webkit-tap-highlight-color: transparent; /* ซ่อนไฮไลต์เวลาแตะปุ่มบน iOS/Android */
 }
 
+/* ขจัด 300ms tap delay บนมือถือ — บอกเบราว์เซอร์ว่าไม่ต้องรอ double-tap */
+a, button, [role="button"], input[type="submit"], input[type="button"], label {
+  touch-action: manipulation;
+}
+
 /* ป้องกันการเลือกข้อความ ยกเว้นในช่องกรอกข้อมูล */
 * {
   user-select: none;

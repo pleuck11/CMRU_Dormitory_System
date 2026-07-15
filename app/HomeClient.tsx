@@ -67,7 +67,7 @@ export default function HomeClient({ initialSettings }: { initialSettings: any }
       </nav>
 
       {/* ส่วนเนื้อหาหลัก */}
-      <section id="home" className="relative pt-32 pb-20 md:pt-40 md:pb-40 flex flex-col justify-center min-h-[85vh]">
+      <section id="home" className="relative pt-36 pb-28 md:pt-40 md:pb-40 flex flex-col justify-center min-h-[85vh]">
         {/* ตั้งค่ารูปภาพพื้นหลัง */}
         <div className="absolute inset-0 z-0">
           <img src={heroImage} alt="Yayee Dormitory Building" fetchPriority="high" className="w-full h-full object-cover object-center contrast-[1.1] saturate-[1.1] brightness-[1.05]" onError={(e) => e.currentTarget.src = PLACEHOLDER_IMG} />
@@ -93,7 +93,7 @@ export default function HomeClient({ initialSettings }: { initialSettings: any }
       </section>
 
       {/* ส่วนคุณสมบัติ */}
-      <section className="py-20 px-6 lg:px-12 max-w-7xl mx-auto">
+      <section className="py-14 md:py-20 px-6 lg:px-12 max-w-7xl mx-auto">
         <div className="mb-12">
           <h2 className="text-3xl md:text-4xl font-extrabold text-[#3A2D23] inline-block relative">
             ความสุขที่ออกแบบมาเพื่อคุณ
@@ -167,7 +167,7 @@ export default function HomeClient({ initialSettings }: { initialSettings: any }
       </section>
 
       {/* ส่วนห้องพัก */}
-      <section id="rooms" className="py-20 px-6 lg:px-12 bg-[#FAF7F2]">
+      <section id="rooms" className="py-14 md:py-20 px-6 lg:px-12 bg-[#FAF7F2]">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
             <div>
@@ -248,7 +248,7 @@ export default function HomeClient({ initialSettings }: { initialSettings: any }
       </section>
 
       {/* ส่วนกระตุ้นการตัดสินใจ */}
-      <section id="contact" className="py-20 px-6 lg:px-12">
+      <section id="contact" className="py-14 md:py-20 px-6 lg:px-12">
         <div className="max-w-5xl mx-auto bg-[#8B5E3C] rounded-[40px] md:rounded-[60px] p-10 md:p-20 text-center relative overflow-hidden shadow-2xl">
           {/* รูปทรงเรขาคณิตตกแต่งพื้นหลัง */}
           <div className="absolute -top-20 -left-20 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
@@ -276,7 +276,7 @@ export default function HomeClient({ initialSettings }: { initialSettings: any }
       </section>
 
       {/* ส่วนท้าย */}
-      <footer className="py-16 px-6 lg:px-12 bg-white border-t border-gray-100">
+      <footer className="py-12 md:py-16 px-6 lg:px-12 bg-white border-t border-gray-100">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
           {/* แบรนด์ */}
           <div className="lg:pr-8">
