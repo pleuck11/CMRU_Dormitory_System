@@ -10,6 +10,7 @@ import NotificationProvider from "@/components/NotificationProvider";
 import ToastContainer from "@/components/ToastContainer";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import AdminNotificationBell from "@/components/AdminNotificationBell";
+import PageTransition from "@/components/PageTransition";
 
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "แดชบอร์ด", icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg> },
@@ -135,10 +136,9 @@ export default function AdminLayout({
 
   return (
     <>
-    <div className="min-h-screen flex flex-col md:flex-row font-sans relative">
-      {/* องค์ประกอบพื้นหลังตกแต่ง */}
-      <div className="fixed top-[-10%] left-[-10%] w-96 h-96 bg-[var(--accent-brown)] rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none z-0 print:hidden"></div>
-      <div className="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-[var(--accent-dark)] rounded-full mix-blend-multiply filter blur-3xl opacity-10 pointer-events-none z-0 print:hidden"></div>
+    <div className="h-[100dvh] flex flex-col md:flex-row font-sans relative">
+      {/* พื้นหลังเป็นสีเดียวล้วน (ลบก้อนแสงอนิเมชันออก) */}
+      <div className="hidden" />
 
       {/* แถบเมนูด้านข้างสำหรับ Desktop */}
       <aside className="hidden md:flex flex-col w-72 glass-panel border-r border-[var(--glass-border)] h-screen sticky top-0 print:hidden z-10 rounded-none bg-white/40">
@@ -260,9 +260,11 @@ export default function AdminLayout({
       )}
 
       {/* เนื้อหาหลัก */}
-      <div className="flex-1 flex flex-col min-h-screen relative z-10 w-full overflow-hidden print:overflow-visible">
+      <div className="flex-1 flex flex-col h-[100dvh] relative z-10 w-full overflow-hidden print:overflow-visible">
         {/* Mobile top header */}
-        <header className="md:hidden flex items-center justify-between p-4 glass-panel bg-white/90 backdrop-blur-md border-b border-[var(--glass-border)] print:hidden rounded-none sticky top-0 z-40">
+        <header className="md:hidden flex items-center justify-between p-4 pb-3 glass-panel bg-white/90 backdrop-blur-md border-b border-[var(--glass-border)] print:hidden rounded-none sticky top-0 z-40"
+          style={{ paddingTop: `max(env(safe-area-inset-top), 44px)` }}
+        >
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm border border-[var(--glass-border)] p-[2px] overflow-hidden flex-shrink-0">
               <img src="/logo.png" alt="Yayee Dormitory Logo" className="w-full h-full object-contain" />
@@ -277,14 +279,19 @@ export default function AdminLayout({
         </header>
 
         {/* พื้นที่แสดงเนื้อหา */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 pb-28 md:pb-8 print:p-0 print:bg-white print:overflow-visible custom-scrollbar">
+        <main className={`flex-1 flex flex-col overflow-x-hidden p-4 md:p-8 pb-28 md:pb-8 print:p-0 print:bg-white print:overflow-visible custom-scrollbar relative ${pathname === '/admin/chat' ? 'overflow-y-hidden' : 'overflow-y-auto'}`}>
           <NotificationProvider>
-            {children}
+            <PageTransition className={pathname === '/admin/chat' ? 'flex-1 flex flex-col min-h-0' : ''}>
+              {children}
+            </PageTransition>
           </NotificationProvider>
         </main>
         
         {/* แถบนำทางด้านล่างสำหรับมือถือ (Floating Capsule Design) */}
-        <nav className="md:hidden fixed bottom-6 left-4 right-4 z-40 glass-panel !rounded-[2rem] px-2 py-2.5 shadow-[0_8px_32px_rgba(198,124,78,0.15)] print:hidden transition-all border border-white/60">
+        <nav
+          className="md:hidden fixed left-4 right-4 z-40 glass-panel !rounded-[2rem] px-2 py-2.5 shadow-[0_8px_32px_rgba(198,124,78,0.15)] print:hidden transition-all border border-white/60"
+          style={{ bottom: `calc(24px + env(safe-area-inset-bottom))` }}
+        >
           <div className="flex items-center justify-between px-2 max-w-md mx-auto">
             {[
               { href: "/admin/dashboard", label: "หน้าหลัก", icon: <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg> },

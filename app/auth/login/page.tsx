@@ -150,16 +150,17 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 font-sans relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 font-sans relative overflow-hidden page-enter">
       {/* วงกลมตกแต่งพื้นหลัง */}
-      <div className="absolute top-[-15%] left-[-10%] w-96 h-96 bg-[var(--accent-light)] rounded-full mix-blend-multiply filter blur-3xl opacity-60 pointer-events-none" />
-      <div className="absolute top-[30%] right-[-10%] w-72 h-72 bg-[var(--accent-brown)] rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none" />
-      <div className="absolute bottom-[-15%] left-[25%] w-80 h-80 bg-[var(--accent-light)] rounded-full mix-blend-multiply filter blur-3xl opacity-40 pointer-events-none" />
+      <div className="absolute top-[-15%] left-[-10%] w-96 h-96 bg-[var(--accent-light)] rounded-full mix-blend-multiply filter blur-3xl opacity-60 pointer-events-none orb-float-1" />
+      <div className="absolute top-[30%] right-[-10%] w-72 h-72 bg-[var(--accent-brown)] rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none orb-float-2" />
+      <div className="absolute bottom-[-15%] left-[25%] w-80 h-80 bg-[var(--accent-light)] rounded-full mix-blend-multiply filter blur-3xl opacity-40 pointer-events-none orb-float-3" />
 
       {/* ปุ่มกลับหน้าแรกแบบลอยตัว (Floating Back Button) */}
       <Link 
         href="/" 
-        className="absolute top-6 left-6 md:top-8 md:left-8 z-50 flex items-center justify-center gap-2 px-3 py-3 md:px-4 md:py-2.5 rounded-full bg-white/60 backdrop-blur-xl border border-white/50 text-[var(--text-main)] shadow-sm hover:bg-white/90 hover:shadow-md hover:scale-105 active:scale-95 transition-all group"
+        className="absolute left-6 md:left-8 z-50 flex items-center justify-center gap-2 px-3 py-3 md:px-4 md:py-2.5 rounded-full bg-white/60 backdrop-blur-xl border border-white/50 text-[var(--text-main)] shadow-sm hover:bg-white/90 hover:shadow-md hover:scale-105 active:scale-95 transition-all group"
+        style={{ top: 'max(env(safe-area-inset-top), 44px)' }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform">
           <line x1="19" y1="12" x2="5" y2="12"></line>

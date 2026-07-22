@@ -396,7 +396,7 @@ export default function AdminChatPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] flex gap-4">
+    <div className="w-full flex-1 min-h-0 flex gap-4">
       {/* รายชื่อผู้เช่า */}
       <div className={`glass-panel rounded-2xl flex flex-col ${selectedTenant ? "hidden md:flex" : "flex"} w-full md:w-80 flex-shrink-0`}>
         {/* หัวข้อ */}
@@ -417,7 +417,7 @@ export default function AdminChatPage() {
         </div>
 
         {/* รายการผู้เช่า */}
-        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {loadingTenants ? (
             <div className="flex items-center justify-center h-32">
               <div className="w-6 h-6 border-2 border-[var(--accent-light)] border-t-[var(--accent-brown)] rounded-full animate-spin" />
@@ -464,7 +464,17 @@ export default function AdminChatPage() {
       </div>
 
       {/* พื้นที่แชท */}
-      <div className={`glass-panel rounded-2xl flex-1 flex flex-col ${selectedTenant ? "flex" : "hidden md:flex"}`}>
+      <div className={`bg-white/80 backdrop-blur-md rounded-2xl flex-1 min-h-0 relative flex flex-col shadow-sm border border-white/60 ${selectedTenant ? "flex" : "hidden md:flex"}`}>
+        {/* ลายพื้นหลังแบบแอปแชท (Dot Pattern) */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none rounded-2xl"
+          style={{
+            backgroundImage: `radial-gradient(#C67C4E 1.5px, transparent 1.5px)`,
+            backgroundSize: '24px 24px',
+            backgroundPosition: '0 0, 12px 12px',
+            opacity: 0.15
+          }}
+        />
         {!selectedTenant ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
             <div className="w-20 h-20 rounded-2xl bg-[var(--accent-light)]/30 flex items-center justify-center">
@@ -544,7 +554,7 @@ export default function AdminChatPage() {
             )}
 
             {/* ข้อความ */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 relative z-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {loadingMessages ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="w-8 h-8 border-3 border-[var(--accent-light)] border-t-[var(--accent-brown)] rounded-full animate-spin" />

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import SplashScreen from "@/components/SplashScreen";
 
 interface AuthContextType {
   user: User | null;
@@ -79,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, role, loading, emailVerified }}>
+      <SplashScreen isVisible={loading} />
       {children}
     </AuthContext.Provider>
   );

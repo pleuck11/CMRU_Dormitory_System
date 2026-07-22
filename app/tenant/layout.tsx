@@ -10,6 +10,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "fireb
 import NotificationProvider from "@/components/NotificationProvider";
 import ToastContainer from "@/components/ToastContainer";
 import EmailVerificationWall from "@/components/EmailVerificationWall";
+import PageTransition from "@/components/PageTransition";
 
 
 export default function TenantLayout({
@@ -131,7 +132,9 @@ export default function TenantLayout({
 
   return (
     <>
-    <div className="min-h-screen bg-transparent flex flex-col md:flex-row font-sans">
+    <div className="h-[100dvh] bg-transparent flex flex-col md:flex-row font-sans relative">
+      {/* พื้นหลังเป็นสีเดียวล้วน (ลบก้อนแสงอนิเมชันออก) */}
+      <div className="hidden" />
 
       {/* แถบเมนูด้านข้าง (Sidebar) */}
       <aside className="hidden md:flex flex-col w-64 glass-panel border-r border-slate-200/50 h-screen sticky top-0">
@@ -360,10 +363,13 @@ export default function TenantLayout({
       </aside>
 
       {/* เนื้อหา */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col h-[100dvh] relative z-10 w-full overflow-hidden">
 
         {/* ส่วนหัวสำหรับมือถือ */}
-        <header className="md:hidden flex items-center justify-between p-4 glass-panel-solid border-b border-[var(--glass-border)] z-40 sticky top-0">
+        <header
+          className="md:hidden flex items-center justify-between p-4 pb-3 glass-panel-solid border-b border-[var(--glass-border)] z-40 sticky top-0"
+          style={{ paddingTop: `max(env(safe-area-inset-top), 44px)` }}
+        >
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm border border-slate-200 p-1 overflow-hidden flex-shrink-0">
               <img src="/logo.png" alt="Yayee Dormitory Logo" className="w-full h-full object-contain" />
@@ -387,34 +393,36 @@ export default function TenantLayout({
         </header>
 
         {/* เนื้อหาหน้าต่างๆ */}
-        <main className="flex-1 p-4 md:p-8 bg-transparent pb-28 md:pb-8">
+        <main className={`flex-1 flex flex-col p-4 md:p-8 bg-transparent pb-28 md:pb-8 relative ${pathname === '/tenant/chat' ? 'overflow-y-hidden' : ''}`}>
           <NotificationProvider>
-            {children}
+            <PageTransition className={pathname === '/tenant/chat' ? 'flex-1 flex flex-col min-h-0' : ''}>
+              {children}
+            </PageTransition>
           </NotificationProvider>
         </main>
 
-        {/* แถบนำทางด้านล่างสำหรับมือถือ */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-slate-200/60 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 shadow-[0_-4px_24px_rgba(0,0,0,0.04)] transition-all">
-          <div className="flex items-center justify-around px-1 max-w-md mx-auto">
+        {/* แถบนำทางด้านล่างสำหรับมือถือ — Floating Capsule (เหมือน Admin) */}
+        <nav
+          className="md:hidden fixed left-4 right-4 z-50 glass-panel !rounded-[2rem] px-2 py-2.5 shadow-[0_8px_32px_rgba(198,124,78,0.15)] print:hidden transition-all border border-white/60"
+          style={{ bottom: `calc(24px + env(safe-area-inset-bottom))` }}
+        >
+          <div className="flex items-center justify-between px-2 max-w-md mx-auto">
             {[
-              { href: "/tenant/dashboard", label: "หน้าหลัก", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></svg> },
-              { href: "/tenant/room", label: "ห้องพัก", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
+              { href: "/tenant/dashboard", label: "หน้าหลัก", icon: <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></svg> },
+              { href: "/tenant/room", label: "ห้องพัก", icon: <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
               ...(tenantStatus !== "moved_out" && hasRoom ? [
-                { href: "/tenant/bills_payments", label: "บิล", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></svg> },
-                { href: "/tenant/repair", label: "แจ้งซ่อม", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> },
+                { href: "/tenant/bills_payments", label: "บิล", icon: <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></svg> },
+                { href: "/tenant/repair", label: "แจ้งซ่อม", icon: <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> },
               ] : []),
-              { href: "/tenant/chat", label: "แชท", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
-              { href: "/tenant/settings", label: "ตั้งค่า", icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> },
+              { href: "/tenant/chat", label: "แชท", icon: <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+              { href: "/tenant/settings", label: "ตั้งค่า", icon: <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> },
             ].map(item => {
               const isActive = pathname === item.href || (item.href === "/tenant/repair" && pathname?.includes("repair")) || (item.href === "/tenant/settings" && (pathname?.includes("profile") || pathname?.includes("settings")));
               return (
-                <Link key={item.href} href={item.href} className="flex flex-col items-center gap-1 min-w-[3.5rem] sm:min-w-[4rem] group" prefetch={true}>
-                  <div className={`relative p-1.5 rounded-xl transition-all duration-300 ease-out ${isActive ? "text-[var(--accent-brown)] bg-orange-50 scale-110" : "text-slate-400 group-hover:text-slate-600 group-hover:scale-105"}`}>
+                <Link key={item.href} href={item.href} className="flex flex-col items-center gap-1 min-w-[3.5rem] relative group" prefetch={true}>
+                  <div className={`relative p-2.5 rounded-2xl transition-all duration-300 ease-out ${isActive ? "text-white bg-gradient-to-br from-[var(--accent-brown)] to-[var(--accent-dark)] shadow-md scale-110" : "text-[var(--text-muted)] group-hover:text-[var(--accent-brown)] group-hover:bg-white/40"}`}>
                     {item.icon}
                   </div>
-                  <span className={`text-[10px] sm:text-xs transition-all duration-300 ${isActive ? "font-bold text-[var(--accent-dark)]" : "font-medium text-slate-500"}`}>
-                    {item.label}
-                  </span>
                 </Link>
               );
             })}
