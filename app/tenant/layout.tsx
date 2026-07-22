@@ -9,6 +9,7 @@ import React, { useEffect, useState } from "react";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import NotificationProvider from "@/components/NotificationProvider";
 import ToastContainer from "@/components/ToastContainer";
+import EmailVerificationWall from "@/components/EmailVerificationWall";
 
 
 export default function TenantLayout({
@@ -18,7 +19,7 @@ export default function TenantLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, emailVerified } = useAuth();
 
   // เปิด dropdown แจ้งซ่อมอัตโนมัติเมื่ออยู่ในหน้าแจ้งซ่อม
   const isRepairPath = pathname === "/tenant/repair" || pathname === "/tenant/repair-history";
@@ -110,10 +111,16 @@ export default function TenantLayout({
     }
   };
 
+
+  // ผู้ใช้ login แล้วแต่ยังไม่ยืนยันอีเมล → แสดงหน้าแจ้งเตือน
+  if (!loading && user && !emailVerified) {
+    return <EmailVerificationWall />;
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        กำลังโหลด...
+        <div className="w-10 h-10 border-4 border-[var(--accent-light)] border-t-[var(--accent-brown)] rounded-full animate-spin" />
       </div>
     );
   }

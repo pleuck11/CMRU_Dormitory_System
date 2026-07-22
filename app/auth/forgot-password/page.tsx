@@ -30,22 +30,7 @@ export default function ForgotPassword() {
         handleCodeInApp: false, // false เพราะต้องการให้ลิงก์เปิดหน้าเว็บ ไม่ใช่บนแอปพลิเคชันมือถือ
       };
 
-      try {
-        // ลองใช้ Resend (Custom HTML) ก่อน
-        const res = await fetch("/api/send-reset-password-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-
-        if (!res.ok) {
-          throw new Error("Resend API Failed");
-        }
-      } catch (apiError) {
-        // ถ้า Resend ล้มเหลว (เช่น ติด Sandbox) ให้ Fallback ไปใช้ Firebase Default
-        console.warn("Resend failed, falling back to Firebase email:", apiError);
-        await sendPasswordResetEmail(auth, email, actionCodeSettings);
-      }
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
 
       setMessage("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว (หากไม่พบ กรุณาตรวจสอบในกล่องจดหมายขยะ/Spam)");
       setEmail("");
@@ -60,6 +45,7 @@ export default function ForgotPassword() {
     } finally {
       setIsSending(false);
     }
+
   };
 
   return (

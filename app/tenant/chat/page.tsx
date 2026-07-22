@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
+import { subscribeAnyAdminPresence } from "@/lib/presence";
 
 interface Message {
   id: string;
@@ -36,6 +37,14 @@ async function deleteOldMessages(tenantId: string) {
   }
 }
 
+function formatLastSeen(date: Date): string {
+  const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (diffSec < 60) return "เมื่อกี้";
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)} นาทีที่แล้ว`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} ชั่วโมงที่แล้ว`;
+  return `${Math.floor(diffSec / 86400)} วันที่แล้ว`;
+}
+
 export default function TenantChatPage() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -43,6 +52,8 @@ export default function TenantChatPage() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pinnedCollapsed, setPinnedCollapsed] = useState(false);
+  const [adminOnline, setAdminOnline] = useState(false);
+  const [adminLastSeen, setAdminLastSeen] = useState<Date | undefined>();
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,6 +87,15 @@ export default function TenantChatPage() {
     );
     return () => unsubscribe();
   }, [user]);
+
+  // Subscribe สถานะออนไลน์ของ admin
+  useEffect(() => {
+    const unsubscribe = subscribeAnyAdminPresence((isOnline, lastSeen) => {
+      setAdminOnline(isOnline);
+      setAdminLastSeen(lastSeen);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -212,9 +232,17 @@ export default function TenantChatPage() {
           <p className="text-base font-bold text-[var(--text-main)]">แชทกับผู้ดูแลหอพัก</p>
           <p className="text-xs text-[var(--text-muted)]">ส่งข้อความถึงแอดมินได้โดยตรง • ประวัติเก็บไว้ 3 เดือน</p>
         </div>
-        <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          ออนไลน์
+        <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${
+          adminOnline
+            ? "text-emerald-600 bg-emerald-50 border-emerald-200"
+            : "text-slate-400 bg-slate-50 border-slate-200"
+        }`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${
+            adminOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-300"
+          }`} />
+          {adminOnline ? "ออนไลน์" : adminLastSeen
+            ? `ออนไลน์ล่าสุด ${formatLastSeen(adminLastSeen)}`
+            : "ออฟไลน์"}
         </span>
       </div>
 

@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
+import { startPresence } from "@/lib/presence";
 
 interface Message {
   id: string;
@@ -67,6 +68,13 @@ export default function AdminChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Broadcast สถานะ admin online เมื่อเปิดหน้าแชท
+  useEffect(() => {
+    if (!user) return;
+    const cleanup = startPresence(user.uid, "admin");
+    return cleanup;
+  }, [user]);
 
   // โหลดรายชื่อผู้เช่าแบบเรียลไทม์
   useEffect(() => {
