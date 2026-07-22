@@ -263,7 +263,7 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col h-[100dvh] relative z-10 w-full overflow-hidden print:overflow-visible">
         {/* Mobile top header */}
         <header className="md:hidden flex items-center justify-between p-4 pb-3 glass-panel bg-white/90 backdrop-blur-md border-b border-[var(--glass-border)] print:hidden rounded-none sticky top-0 z-40"
-          style={{ paddingTop: `max(env(safe-area-inset-top), 44px)` }}
+          style={{ paddingTop: `calc(env(safe-area-inset-top, 0px) + 16px)` }}
         >
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm border border-[var(--glass-border)] p-[2px] overflow-hidden flex-shrink-0">

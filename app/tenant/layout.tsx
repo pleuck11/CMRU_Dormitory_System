@@ -368,7 +368,7 @@ export default function TenantLayout({
         {/* ส่วนหัวสำหรับมือถือ */}
         <header
           className="md:hidden flex items-center justify-between p-4 pb-3 glass-panel-solid border-b border-[var(--glass-border)] z-40 sticky top-0"
-          style={{ paddingTop: `max(env(safe-area-inset-top), 44px)` }}
+          style={{ paddingTop: `calc(env(safe-area-inset-top, 0px) + 16px)` }}
         >
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm border border-slate-200 p-1 overflow-hidden flex-shrink-0">

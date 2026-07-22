@@ -160,7 +160,7 @@ export default function Login() {
       <Link 
         href="/" 
         className="absolute left-6 md:left-8 z-50 flex items-center justify-center gap-2 px-3 py-3 md:px-4 md:py-2.5 rounded-full bg-white/60 backdrop-blur-xl border border-white/50 text-[var(--text-main)] shadow-sm hover:bg-white/90 hover:shadow-md hover:scale-105 active:scale-95 transition-all group"
-        style={{ top: 'max(env(safe-area-inset-top), 44px)' }}
+        style={{ top: `calc(env(safe-area-inset-top, 0px) + 24px)` }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform">
           <line x1="19" y1="12" x2="5" y2="12"></line>
