@@ -113,10 +113,10 @@ export default function TenantLayout({
   };
 
 
-  // ผู้ใช้ login แล้วแต่ยังไม่ยืนยันอีเมล → แสดงหน้าแจ้งเตือน
-  if (!loading && user && !emailVerified) {
-    return <EmailVerificationWall />;
-  }
+  // ปิดการตรวจสอบการยืนยันอีเมลชั่วคราว (ผู้ใช้ login แล้วเข้าได้เลย)
+  // if (!loading && user && !emailVerified) {
+  //   return <EmailVerificationWall />;
+  // }
 
   if (loading) {
     return (

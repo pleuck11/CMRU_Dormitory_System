@@ -77,19 +77,10 @@ export default function Register() {
         createdAt: new Date().toISOString()
       });
 
-      // 4. ส่งอีเมลยืนยันตัวตนผ่านระบบพื้นฐานของ Firebase
-      const actionCodeSettings = {
-        url: window.location.origin + '/auth/login?verified=1',
-        handleCodeInApp: false,
-      };
-      try {
-        await sendEmailVerification(newUser, actionCodeSettings);
-      } catch (emailErr) {
-        console.error("Failed to send Firebase verification email:", emailErr);
-        // ระบบสมัครสำเร็จแล้ว แต่แค่ส่งอีเมลไม่ผ่าน ไม่ควรให้หน้าพัง
-      }
+      // 4. ปิดการส่งอีเมลยืนยันชั่วคราว
+      // await sendEmailVerification(newUser, actionCodeSettings);
+      // await signOut(auth);
 
-      await signOut(auth); // ออกจากระบบหลังสมัครเสร็จ
       setVerificationSent(true);
     } catch (err: any) {
       if (err.code !== "auth/email-already-in-use" && err.code !== "auth/weak-password" && err.code !== "permission-denied") {
@@ -127,13 +118,13 @@ export default function Register() {
                 </svg>
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-[var(--text-main)] mb-3">รอดำเนินการยืนยัน</h2>
+            <h2 className="text-2xl font-bold text-[var(--text-main)] mb-3">สมัครสมาชิกสำเร็จ!</h2>
             <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-2">
-              ระบบได้ส่งลิงก์ยืนยันตัวตนไปที่อีเมล
+              สร้างบัญชีสำหรับอีเมล
             </p>
             <p className="font-semibold text-[var(--text-main)] text-sm mb-4">{formData.email}</p>
             <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-8">
-              กรุณาตรวจสอบอีเมล (รวมถึงในกล่องจดหมายขยะ) และคลิกลิงก์ที่ได้รับเพื่อเข้าสู่ระบบ
+              บัญชีของคุณพร้อมใช้งานแล้ว สามารถเข้าสู่ระบบได้ทันที
             </p>
             <Link
               href="/auth/login"

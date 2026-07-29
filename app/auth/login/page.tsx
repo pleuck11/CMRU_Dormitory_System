@@ -46,13 +46,13 @@ export default function Login() {
       const docSnap = await getDoc(docRef);
       const userRole = docSnap.exists() ? docSnap.data().role : "tenant";
 
-      // ยกเว้นการยืนยันอีเมลสำหรับผู้ดูแลระบบ (admin)
-      if (!userCredential.user.emailVerified && userRole !== "admin") {
-        await signOut(auth);
-        setUnverifiedEmail(email);
-        setIsLoggingIn(false);
-        return;
-      }
+      // ปิดการบังคับยืนยันอีเมลชั่วคราว (สามารถเข้าสู่ระบบได้ทันที)
+      // if (!userCredential.user.emailVerified && userRole !== "admin") {
+      //   await signOut(auth);
+      //   setUnverifiedEmail(email);
+      //   setIsLoggingIn(false);
+      //   return;
+      // }
 
       // ผู้ใช้จะถูกเปลี่ยนหน้าอัตโนมัติผ่าน useEffect
     } catch (err: any) {
