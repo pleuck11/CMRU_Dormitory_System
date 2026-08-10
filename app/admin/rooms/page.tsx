@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { collection, query, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -18,6 +19,11 @@ interface Room {
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // สถานะของหน้าต่างป๊อปอัป (Modal)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -409,6 +415,18 @@ export default function RoomsPage() {
                     <span className="hidden sm:inline">แก้ไขที่เลือก</span>
                   </button>
                   <button 
+                    onClick={() => {
+                       setBulkFieldsToUpdate({ building: false, floor: false, status: false, roomType: false, rentPrice: false, image: true });
+                       setImageFile(null);
+                       setImagePreview(null);
+                       setIsBulkEditModalOpen(true);
+                    }}
+                    className="glass-button-outline px-4 py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 group hover:text-amber-600 hover:border-amber-300"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                    <span className="hidden sm:inline">เปลี่ยนรูปที่เลือก</span>
+                  </button>
+                  <button 
                     onClick={handleBulkDelete}
                     className="glass-button-outline px-4 py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 group hover:text-red-600 hover:border-red-300"
                   >
@@ -505,6 +523,7 @@ export default function RoomsPage() {
                       />
                     </th>
                   )}
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">รูปภาพ</th>
                   <th className="px-6 py-4 font-semibold whitespace-nowrap">หมายเลขห้อง</th>
                   <th className="px-6 py-4 font-semibold whitespace-nowrap">ตึก</th>
                   <th className="px-6 py-4 font-semibold whitespace-nowrap">ชั้น</th>
@@ -528,6 +547,33 @@ export default function RoomsPage() {
                         />
                       </td>
                     )}
+                    <td className="flex justify-between md:table-cell items-center px-2 py-3 md:px-6 md:py-4 border-b border-[var(--glass-border)] md:border-0">
+                      <span className="md:hidden font-semibold text-xs text-[var(--text-muted)] uppercase">รูปภาพ</span>
+                      {room.image ? (
+                        <button 
+                          onClick={() => handleOpenModal(room)}
+                          className="flex items-center gap-2 group text-left"
+                          title="มีรูปภาพแล้ว - คลิกเพื่อเปลี่ยนรูปภาพ"
+                        >
+                          <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-200 shadow-sm relative group-hover:scale-105 transition-transform flex-shrink-0 bg-slate-100">
+                            <img src={room.image} alt={room.roomNumber} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                            </div>
+                          </div>
+                          <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 hidden lg:inline-block">✓ เปลี่ยนรูป</span>
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleOpenModal(room)}
+                          className="px-2.5 py-1.5 rounded-xl bg-amber-50/90 text-amber-700 hover:bg-amber-100 border border-amber-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+                          title="ยังไม่มีรูป - คลิกเพื่ออัปโหลดรูปภาพ"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                          <span>+ อัปโหลด</span>
+                        </button>
+                      )}
+                    </td>
                     <td className="flex justify-between md:table-cell items-center px-2 py-3 md:px-6 md:py-4 font-bold text-[var(--text-main)] text-base border-b border-[var(--glass-border)] md:border-0">
                       <span className="md:hidden font-semibold text-xs text-[var(--text-muted)] uppercase">หมายเลขห้อง</span>
                       {room.roomNumber}
@@ -583,13 +629,10 @@ export default function RoomsPage() {
       </div>
 
       {/* หน้าต่างป๊อปอัปสำหรับเพิ่ม/แก้ไข (Modal) */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
-          <div className="glass-panel w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-300 relative border border-white/40 shadow-2xl">
-            {/* ลูกแก้วตกแต่งสำหรับ Modal */}
-            <div className="absolute top-[-20%] right-[-10%] w-48 h-48 bg-[var(--accent-brown)] rounded-full mix-blend-multiply filter blur-2xl opacity-40 pointer-events-none z-0"></div>
-            <div className="absolute bottom-[-10%] left-[-10%] w-32 h-32 bg-[var(--accent-dark)] rounded-full mix-blend-multiply filter blur-xl opacity-30 pointer-events-none z-0"></div>
-            <div className="px-6 py-5 border-b border-[var(--glass-border)] flex justify-between items-center bg-white/30 backdrop-blur-md relative z-10">
+      {mounted && isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md overflow-hidden rounded-3xl animate-in fade-in zoom-in-95 duration-300 shadow-2xl border border-[var(--glass-border)]">
+            <div className="px-6 py-5 border-b border-[var(--glass-border)] flex justify-between items-center">
               <h3 className="text-xl font-bold text-[var(--text-main)]">
                 {editingRoom ? "แก้ไขข้อมูลห้องพัก" : "เพิ่มห้องพักใหม่"}
               </h3>
@@ -601,13 +644,24 @@ export default function RoomsPage() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar relative z-10">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
               
-              {/* ส่วนอัปโหลดรูปภาพ */}
+              {/* ส่วนอัปโหลดรูปภาพ (อยู่บนสุด) */}
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-main)] ml-1">รูปภาพห้องพัก</label>
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-sm font-bold text-[var(--text-main)]">รูปภาพห้องพัก</label>
+                  {imagePreview ? (
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                      ✓ มีรูปภาพแล้ว
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                      ยังไม่มีรูปภาพ
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center justify-center w-full">
-                  <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-44 glass-panel border-[1.5px] border-dashed rounded-2xl cursor-pointer hover:bg-white/50 transition-all overflow-hidden relative group">
+                  <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-36 bg-[var(--bg-color)] border-[1.5px] border-dashed border-[var(--glass-border)] rounded-2xl cursor-pointer hover:bg-[var(--accent-light)]/20 transition-all overflow-hidden relative group">
                     {imagePreview ? (
                       <div className="relative w-full h-full">
                          <img src={imagePreview} alt="Preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -616,13 +670,13 @@ export default function RoomsPage() {
                          </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <div className="w-12 h-12 rounded-full bg-[var(--accent-light)]/50 border border-[var(--accent-brown)]/30 text-[var(--accent-brown)] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <svg className="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                      <div className="flex flex-col items-center justify-center py-4">
+                        <div className="w-10 h-10 rounded-full bg-[var(--accent-light)] text-[var(--accent-brown)] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                                 <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                             </svg>
                         </div>
-                        <p className="mb-1 text-sm text-[var(--text-main)] font-bold">คลิกเพื่ออัปโหลดรูปภาพ</p>
+                        <p className="mb-1 text-sm text-[var(--text-main)] font-bold">กดอัปโหลดรูปภาพใหม่</p>
                         <p className="text-xs text-[var(--text-muted)] font-medium">SVG, PNG, JPG หรือ GIF</p>
                       </div>
                     )}
@@ -631,23 +685,32 @@ export default function RoomsPage() {
                 </div>
                 
                 {existingImages.length > 0 && (
-                  <div className="mt-3 pt-2 border-t border-[var(--glass-border)]">
-                    <p className="text-xs text-[var(--text-main)] opacity-70 font-bold mb-2 ml-1">หรือเลือกรูปภาพที่เคยอัปโหลดแล้ว:</p>
+                  <div className="mt-2 pt-2 border-t border-[var(--glass-border)]">
+                    <p className="text-xs text-[var(--text-muted)] font-bold mb-2 ml-1">หรือเลือกรูปภาพที่เคยอัปโหลดแล้วในระบบ ({existingImages.length} รูป):</p>
                     <div className="flex gap-2 overflow-x-auto pb-2 px-1 custom-scrollbar">
-                      {existingImages.map((img, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => {
-                            setImageFile(null);
-                            setImagePreview(img);
-                            setFormData({...formData, image: img});
-                          }}
-                          className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 ${imagePreview === img && !imageFile ? 'border-[var(--accent-brown)] shadow-lg scale-105' : 'border-white/30 shadow-sm hover:scale-105 opacity-80 hover:opacity-100'}`}
-                        >
-                          <img src={img} alt={`recent-${idx}`} className="w-full h-full object-cover" loading="lazy" />
-                        </button>
-                      ))}
+                      {existingImages.map((img, idx) => {
+                        const isSelected = imagePreview === img && !imageFile;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setImageFile(null);
+                              setImagePreview(img);
+                              setFormData({...formData, image: img});
+                            }}
+                            className={`flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all duration-300 relative ${isSelected ? 'border-[var(--accent-brown)] shadow-lg scale-105 ring-2 ring-[var(--accent-brown)]/40' : 'border-[var(--glass-border)] hover:scale-105 opacity-75 hover:opacity-100'}`}
+                            title="คลิกเพื่อเลือกรูปนี้"
+                          >
+                            <img src={img} alt={`recent-${idx}`} className="w-full h-full object-cover" loading="lazy" />
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                <span className="w-5 h-5 rounded-full bg-[var(--accent-brown)] text-white text-[10px] font-bold flex items-center justify-center shadow-md">✓</span>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -670,40 +733,22 @@ export default function RoomsPage() {
                   <label className="text-sm font-bold text-[var(--text-main)] ml-1">ตึก</label>
                   <input 
                     type="text"
-                    list="buildings-list"
                     value={formData.building}
                     onChange={(e) => setFormData({...formData, building: e.target.value})}
-                    className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] bg-white/50 backdrop-blur-md font-medium"
-                    placeholder="เช่น A, B, หรือพิมพ์ใหม่"
+                    className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] font-medium"
+                    placeholder="เช่น A, B"
                   />
-                  <datalist id="buildings-list">
-                    {Array.from(new Set([...rooms.map(r => r.building), "A", "B", "C", "D"])).sort().map(b => (
-                      <option key={b} value={b} />
-                    ))}
-                  </datalist>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-main)] ml-1">ชั้น</label>
                   <input 
                     type="text"
-                    list="floors-list"
+                    inputMode="numeric"
                     value={formData.floor}
-                    onChange={(e) => setFormData({...formData, floor: e.target.value})}
-                    className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] bg-white/50 backdrop-blur-md font-medium"
-                    placeholder="เช่น 1, 2, หรือพิมพ์ใหม่"
+                    onChange={(e) => setFormData({...formData, floor: e.target.value.replace(/[^0-9]/g, '')})}
+                    className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] font-medium"
+                    placeholder="เช่น 1, 2"
                   />
-                  <datalist id="floors-list">
-                    {Array.from(new Set([...rooms.map(r => r.floor), "1", "2", "3", "4", "5", "6", "7", "8"]))
-                      .sort((a, b) => {
-                        const numA = Number(a);
-                        const numB = Number(b);
-                        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-                        return String(a).localeCompare(String(b));
-                      })
-                      .map(f => (
-                      <option key={f} value={f} />
-                    ))}
-                  </datalist>
                 </div>
               </div>
 
@@ -711,11 +756,13 @@ export default function RoomsPage() {
                 <label className="text-sm font-bold text-[var(--text-main)] ml-1">ราคาเช่า (บาท/เดือน)</label>
                 <input 
                   type="number" 
+                  inputMode="numeric"
                   required
                   min="0"
-                  value={formData.rentPrice}
-                  onChange={(e) => setFormData({...formData, rentPrice: Number(e.target.value)})}
+                  value={formData.rentPrice || ''}
+                  onChange={(e) => setFormData({...formData, rentPrice: e.target.value === '' ? 0 : parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0})}
                   className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="3500"
                 />
               </div>
 
@@ -771,16 +818,15 @@ export default function RoomsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* หน้าต่างป๊อปอัปสำหรับการแก้ไขหลายรายการ (Bulk Edit Modal) */}
-      {isBulkEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
-          <div className="glass-panel w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-300 relative border border-white/40 shadow-2xl">
-            <div className="absolute top-[-20%] right-[-10%] w-48 h-48 bg-[var(--accent-brown)] rounded-full mix-blend-multiply filter blur-2xl opacity-40 pointer-events-none z-0"></div>
-            <div className="absolute bottom-[-10%] left-[-10%] w-32 h-32 bg-[var(--accent-dark)] rounded-full mix-blend-multiply filter blur-xl opacity-30 pointer-events-none z-0"></div>
-            <div className="px-6 py-5 border-b border-[var(--glass-border)] flex justify-between items-center bg-white/30 backdrop-blur-md relative z-10">
+      {mounted && isBulkEditModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-lg overflow-hidden rounded-3xl animate-in fade-in zoom-in-95 duration-300 shadow-2xl border border-[var(--glass-border)]">
+            <div className="px-6 py-5 border-b border-[var(--glass-border)] flex justify-between items-center">
               <div>
                 <h3 className="text-xl font-bold text-[var(--text-main)]">
                   แก้ไขข้อมูลแบบกลุ่ม
@@ -795,7 +841,7 @@ export default function RoomsPage() {
               </button>
             </div>
             
-            <form onSubmit={handleBulkSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar relative z-10">
+            <form onSubmit={handleBulkSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
               <div className="space-y-4">
                 <p className="text-sm font-semibold text-rose-600 bg-rose-50 px-4 py-3 rounded-xl border border-rose-100 flex items-start gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -816,15 +862,11 @@ export default function RoomsPage() {
                   <input 
                     type="text"
                     disabled={!bulkFieldsToUpdate.building}
-                    list="b-buildings-list"
                     value={bulkFormData.building}
                     onChange={(e) => setBulkFormData({...bulkFormData, building: e.target.value})}
                     className="glass-input w-full px-4 py-2 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] disabled:opacity-50 font-medium"
                     placeholder="ใส่ตึกใหม่"
                   />
-                  <datalist id="b-buildings-list">
-                    {Array.from(new Set([...rooms.map(r => r.building), "A", "B"])).sort().map(b => ( <option key={b} value={b} /> ))}
-                  </datalist>
                 </div>
 
                 {/* ชั้น */}
@@ -840,16 +882,13 @@ export default function RoomsPage() {
                   </label>
                   <input 
                     type="text"
+                    inputMode="numeric"
                     disabled={!bulkFieldsToUpdate.floor}
-                    list="b-floors-list"
                     value={bulkFormData.floor}
-                    onChange={(e) => setBulkFormData({...bulkFormData, floor: e.target.value})}
+                    onChange={(e) => setBulkFormData({...bulkFormData, floor: e.target.value.replace(/[^0-9]/g, '')})}
                     className="glass-input w-full px-4 py-2 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] disabled:opacity-50 font-medium"
                     placeholder="ใส่ชั้นใหม่"
                   />
-                  <datalist id="b-floors-list">
-                    {Array.from(new Set([...rooms.map(r => r.floor), "1", "2", "3"])).sort((a,b) => Number(a)-Number(b)).map(f => ( <option key={f} value={f} /> ))}
-                  </datalist>
                 </div>
 
                 {/* ราคาเช่า */}
@@ -865,10 +904,11 @@ export default function RoomsPage() {
                   </label>
                   <input 
                     type="number" 
+                    inputMode="numeric"
                     min="0"
                     disabled={!bulkFieldsToUpdate.rentPrice}
-                    value={bulkFormData.rentPrice}
-                    onChange={(e) => setBulkFormData({...bulkFormData, rentPrice: Number(e.target.value)})}
+                    value={bulkFormData.rentPrice || ''}
+                    onChange={(e) => setBulkFormData({...bulkFormData, rentPrice: e.target.value === '' ? 0 : parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0})}
                     className="glass-input w-full px-4 py-2 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] text-[var(--text-main)] disabled:opacity-50 font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
@@ -918,6 +958,78 @@ export default function RoomsPage() {
                   </select>
                 </div>
 
+                {/* เปลี่ยนรูปภาพ */}
+                <div className="glass-panel p-4 rounded-2xl space-y-3 bg-white/40">
+                  <label className="flex items-center gap-2 cursor-pointer font-bold text-sm text-[var(--text-main)]">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-gray-300 text-[var(--accent-brown)] focus:ring-[var(--accent-brown)]" 
+                      checked={bulkFieldsToUpdate.image}
+                      onChange={(e) => setBulkFieldsToUpdate({...bulkFieldsToUpdate, image: e.target.checked})}
+                    />
+                    เปลี่ยนรูปภาพ (ใช้กับ {selectedRoomIds.length} ห้องที่เลือก)
+                  </label>
+
+                  {bulkFieldsToUpdate.image && (
+                    <div className="space-y-3 pt-2 border-t border-[var(--glass-border)] animate-in fade-in duration-200">
+                      <div className="flex items-center justify-center w-full">
+                        <label htmlFor="bulk-dropzone-file" className="flex flex-col items-center justify-center w-full h-32 bg-[var(--bg-color)] border-[1.5px] border-dashed border-[var(--glass-border)] rounded-2xl cursor-pointer hover:bg-[var(--accent-light)]/20 transition-all overflow-hidden relative group">
+                          {imagePreview ? (
+                            <div className="relative w-full h-full">
+                              <img src={imagePreview} alt="Bulk Preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="text-white font-medium text-xs flex items-center gap-1.5">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                                  เปลี่ยนรูปภาพใหม่
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center py-3">
+                              <div className="w-8 h-8 rounded-full bg-[var(--accent-light)] text-[var(--accent-brown)] flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                              </div>
+                              <p className="text-xs text-[var(--text-main)] font-bold">กดอัปโหลดรูปภาพใหม่</p>
+                            </div>
+                          )}
+                          <input id="bulk-dropzone-file" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                        </label>
+                      </div>
+
+                      {existingImages.length > 0 && (
+                        <div>
+                          <p className="text-xs text-[var(--text-muted)] font-bold mb-1.5 ml-1">หรือเลือกรูปภาพที่มีอยู่แล้วในระบบ ({existingImages.length} รูป):</p>
+                          <div className="flex gap-2 overflow-x-auto pb-2 px-1 custom-scrollbar">
+                            {existingImages.map((img, idx) => {
+                              const isSelected = imagePreview === img && !imageFile;
+                              return (
+                                <button 
+                                  key={idx} 
+                                  type="button"
+                                  onClick={() => { 
+                                    setImageFile(null); 
+                                    setImagePreview(img); 
+                                    setBulkFormData({...bulkFormData, image: img}); 
+                                  }}
+                                  className={`flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden border-2 transition-all duration-300 relative ${isSelected ? 'border-[var(--accent-brown)] shadow-lg scale-105 ring-2 ring-[var(--accent-brown)]/40' : 'border-[var(--glass-border)] hover:scale-105 opacity-75 hover:opacity-100'}`}
+                                  title="คลิกเพื่อใช้รูปนี้กับทุกห้องที่เลือก"
+                                >
+                                  <img src={img} alt={`recent-${idx}`} className="w-full h-full object-cover" loading="lazy" />
+                                  {isSelected && (
+                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                      <span className="w-4 h-4 rounded-full bg-[var(--accent-brown)] text-white text-[9px] font-bold flex items-center justify-center shadow-md">✓</span>
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               <div className="pt-4 flex gap-3">
@@ -945,16 +1057,15 @@ export default function RoomsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* หน้าต่างป๊อปอัปสำหรับเพิ่มรวดเร็ว (Quick Modal) */}
-      {isQuickModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
-          <div className="glass-panel w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-300 relative border border-white/40 shadow-2xl">
-            <div className="absolute top-[-20%] right-[-10%] w-48 h-48 bg-[var(--accent-brown)] rounded-full mix-blend-multiply filter blur-2xl opacity-40 pointer-events-none z-0"></div>
-            <div className="absolute bottom-[-10%] left-[-10%] w-32 h-32 bg-[var(--accent-dark)] rounded-full mix-blend-multiply filter blur-xl opacity-30 pointer-events-none z-0"></div>
-            <div className="px-6 py-5 border-b border-[var(--glass-border)] flex justify-between items-center bg-white/30 backdrop-blur-md relative z-10">
+      {mounted && isQuickModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md overflow-hidden rounded-3xl animate-in fade-in zoom-in-95 duration-300 shadow-2xl border border-[var(--glass-border)]">
+            <div className="px-6 py-5 border-b border-[var(--glass-border)] flex justify-between items-center">
               <h3 className="text-xl font-bold text-[var(--text-main)]">
                 เพิ่มห้องพักแบบรวดเร็ว
               </h3>
@@ -966,51 +1077,67 @@ export default function RoomsPage() {
               </button>
             </div>
             
-            <form onSubmit={handleQuickSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar relative z-10">
+            <form onSubmit={handleQuickSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
               
+              {/* รูปภาพ — อยู่บนสุด */}
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[var(--text-main)] ml-1">รูปภาพ (ใช้กับทุกห้อง)</label>
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-sm font-bold text-[var(--text-main)]">รูปภาพ <span className="text-[var(--text-muted)] font-normal">(ทุกห้อง)</span></label>
+                  {imagePreview ? (
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                      ✓ เลือกรูปภาพแล้ว
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                      ยังไม่ได้เลือกรูปภาพ
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center justify-center w-full">
-                  <label htmlFor="quick-dropzone-file" className="flex flex-col items-center justify-center w-full h-44 glass-panel border-[1.5px] border-dashed rounded-2xl cursor-pointer hover:bg-white/50 transition-all overflow-hidden relative group">
+                  <label htmlFor="quick-dropzone-file" className="flex flex-col items-center justify-center w-full h-36 bg-[var(--bg-color)] border-[1.5px] border-dashed border-[var(--glass-border)] rounded-2xl cursor-pointer hover:bg-[var(--accent-light)]/20 transition-all overflow-hidden relative group">
                     {imagePreview ? (
                       <div className="relative w-full h-full">
-                         <img src={imagePreview} alt="Preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white font-medium flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg> เปลี่ยนรูปภาพ</span>
-                         </div>
+                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white font-medium flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                            เปลี่ยนรูปภาพ
+                          </span>
+                        </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <div className="w-12 h-12 rounded-full bg-[var(--accent-light)]/50 border border-[var(--accent-brown)]/30 text-[var(--accent-brown)] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <svg className="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                            </svg>
+                      <div className="flex flex-col items-center justify-center py-4">
+                        <div className="w-10 h-10 rounded-full bg-[var(--accent-light)] text-[var(--accent-brown)] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
                         </div>
-                        <p className="mb-1 text-sm text-[var(--text-main)] font-bold">อัปโหลดรูปภาพใหม่</p>
+                        <p className="text-sm text-[var(--text-main)] font-bold">กดอัปโหลดรูปภาพใหม่</p>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">SVG, PNG, JPG หรือ GIF</p>
                       </div>
                     )}
                     <input id="quick-dropzone-file" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
                   </label>
                 </div>
-                
                 {existingImages.length > 0 && (
-                  <div className="mt-3 pt-2 border-t border-[var(--glass-border)]">
-                    <p className="text-xs text-[var(--text-main)] opacity-70 font-bold mb-2 ml-1">หรือเลือกรูปที่มีอยู่แล้ว:</p>
+                  <div className="mt-2 pt-2 border-t border-[var(--glass-border)]">
+                    <p className="text-xs text-[var(--text-muted)] font-bold mb-2 ml-1">หรือเลือกรูปภาพที่เคยอัปโหลดแล้ว ({existingImages.length} รูป):</p>
                     <div className="flex gap-2 overflow-x-auto pb-2 px-1 custom-scrollbar">
-                      {existingImages.map((img, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => {
-                            setImageFile(null);
-                            setImagePreview(img);
-                            setQuickFormData({...quickFormData, image: img});
-                          }}
-                          className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 ${imagePreview === img && !imageFile ? 'border-[var(--accent-brown)] shadow-lg scale-105' : 'border-white/30 shadow-sm hover:scale-105 opacity-80 hover:opacity-100'}`}
-                        >
-                          <img src={img} alt={`recent-${idx}`} className="w-full h-full object-cover" loading="lazy" />
-                        </button>
-                      ))}
+                      {existingImages.map((img, idx) => {
+                        const isSelected = imagePreview === img && !imageFile;
+                        return (
+                          <button key={idx} type="button"
+                            onClick={() => { setImageFile(null); setImagePreview(img); setQuickFormData({...quickFormData, image: img}); }}
+                            className={`flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all duration-300 relative ${isSelected ? 'border-[var(--accent-brown)] shadow-lg scale-105 ring-2 ring-[var(--accent-brown)]/40' : 'border-[var(--glass-border)] hover:scale-105 opacity-75 hover:opacity-100'}`}
+                            title="คลิกเพื่อเลือกรูปนี้"
+                          >
+                            <img src={img} alt={`recent-${idx}`} className="w-full h-full object-cover" loading="lazy" />
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                <span className="w-5 h-5 rounded-full bg-[var(--accent-brown)] text-white text-[10px] font-bold flex items-center justify-center shadow-md">✓</span>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1032,11 +1159,12 @@ export default function RoomsPage() {
                   <label className="text-sm font-bold text-[var(--text-main)] ml-1">จำนวนห้อง</label>
                   <input 
                     type="number" 
+                    inputMode="numeric"
                     required
                     min="1"
                     max="100"
-                    value={quickFormData.roomCount}
-                    onChange={(e) => setQuickFormData({...quickFormData, roomCount: Number(e.target.value)})}
+                    value={quickFormData.roomCount || ''}
+                    onChange={(e) => setQuickFormData({...quickFormData, roomCount: e.target.value === '' ? 1 : parseInt(e.target.value.replace(/[^0-9]/g, '')) || 1})}
                     className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] placeholder-slate-400 font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
@@ -1047,33 +1175,22 @@ export default function RoomsPage() {
                   <label className="text-sm font-bold text-[var(--text-main)] ml-1">ตึก</label>
                   <input 
                     type="text"
-                    list="q-buildings-list"
                     value={quickFormData.building}
                     onChange={(e) => setQuickFormData({...quickFormData, building: e.target.value})}
-                    className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] bg-white/50 backdrop-blur-md font-medium"
+                    className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] font-medium"
                     placeholder="เช่น A"
                   />
-                  <datalist id="q-buildings-list">
-                    {Array.from(new Set([...rooms.map(r => r.building), "A", "B", "C", "D"])).sort().map(b => (
-                      <option key={b} value={b} />
-                    ))}
-                  </datalist>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-[var(--text-main)] ml-1">ชั้น</label>
                   <input 
                     type="text"
-                    list="q-floors-list"
+                    inputMode="numeric"
                     value={quickFormData.floor}
-                    onChange={(e) => setQuickFormData({...quickFormData, floor: e.target.value})}
-                    className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] bg-white/50 backdrop-blur-md font-medium"
+                    onChange={(e) => setQuickFormData({...quickFormData, floor: e.target.value.replace(/[^0-9]/g, '')})}
+                    className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] font-medium"
                     placeholder="เช่น 1"
                   />
-                  <datalist id="q-floors-list">
-                    {Array.from(new Set([...rooms.map(r => r.floor), "1", "2", "3", "4", "5", "6", "7", "8"])).sort((a,b) => Number(a) - Number(b)).map(f => (
-                      <option key={f} value={f} />
-                    ))}
-                  </datalist>
                 </div>
               </div>
 
@@ -1081,10 +1198,11 @@ export default function RoomsPage() {
                 <label className="text-sm font-bold text-[var(--text-main)] ml-1">ราคาเช่า (บาท/เดือน)</label>
                 <input 
                   type="number" 
+                  inputMode="numeric"
                   required
                   min="0"
-                  value={quickFormData.rentPrice}
-                  onChange={(e) => setQuickFormData({...quickFormData, rentPrice: Number(e.target.value)})}
+                  value={quickFormData.rentPrice || ''}
+                  onChange={(e) => setQuickFormData({...quickFormData, rentPrice: e.target.value === '' ? 0 : parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0})}
                   className="glass-input w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--accent-brown)] focus:border-transparent text-[var(--text-main)] font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
@@ -1140,7 +1258,8 @@ export default function RoomsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

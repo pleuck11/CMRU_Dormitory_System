@@ -393,7 +393,7 @@ export default function TenantLayout({
         </header>
 
         {/* เนื้อหาหน้าต่างๆ */}
-        <main className={`flex-1 flex flex-col p-4 md:p-8 bg-transparent pb-28 md:pb-8 relative ${pathname === '/tenant/chat' ? 'overflow-y-hidden' : ''}`}>
+        <main className={`flex-1 flex flex-col overflow-x-hidden p-4 md:p-8 bg-transparent pb-28 md:pb-8 custom-scrollbar relative ${pathname === '/tenant/chat' ? 'overflow-y-hidden' : 'overflow-y-auto'}`}>
           <NotificationProvider>
             <PageTransition className={pathname === '/tenant/chat' ? 'flex-1 flex flex-col min-h-0' : ''}>
               {children}
