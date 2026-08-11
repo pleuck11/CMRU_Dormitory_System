@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
@@ -41,7 +42,7 @@ interface Repair {
 }
 
 export default function TenantDashboard() {
-
+  const [mounted, setMounted] = useState(false);
   const [roomRequest, setRoomRequest] = useState<RoomRequest | null>(null);
   const [slipFile, setSlipFile] = useState<File | null>(null);
   const [idCardFile, setIdCardFile] = useState<File | null>(null);
@@ -58,6 +59,10 @@ export default function TenantDashboard() {
   const [loading, setLoading] = useState(true);
 
   const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // รอให้ผู้ใช้ยืนยันตัวตนเสร็จสิ้น
@@ -483,10 +488,10 @@ export default function TenantDashboard() {
       </div>
 
       {/* ============ Modal ชำระเงินมัดจำ ============ */}
-      {isPayModalOpen && roomRequest && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !uploading && setIsPayModalOpen(false)} />
-          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 w-full sm:w-[95%] sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 space-y-5 animate-scale-in max-h-[92vh] overflow-y-auto shadow-2xl">
+      {mounted && isPayModalOpen && roomRequest && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => !uploading && setIsPayModalOpen(false)} />
+          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 w-full max-w-sm rounded-3xl p-6 space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto shadow-2xl z-10">
 
             <div className="text-center">
               <div className="w-12 h-12 rounded-2xl bg-[var(--accent-light)]/50 border border-[var(--accent-brown)]/20 text-[var(--accent-dark)] flex items-center justify-center mx-auto mb-3">
@@ -580,14 +585,15 @@ export default function TenantDashboard() {
               ปิด
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ============ Modal แจ้งย้ายออก ============ */}
-      {isMoveOutModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !uploading && setIsMoveOutModalOpen(false)} />
-          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 w-full sm:w-[95%] sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-5 animate-scale-in max-h-[92vh] overflow-y-auto shadow-2xl">
+      {mounted && isMoveOutModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => !uploading && setIsMoveOutModalOpen(false)} />
+          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 w-full max-w-md rounded-3xl p-6 space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto shadow-2xl z-10">
             <div className="text-center">
               <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -624,7 +630,8 @@ export default function TenantDashboard() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
@@ -32,6 +33,7 @@ interface BankAccount {
 }
 
 export default function TenantBillsPaymentsPage() {
+  const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
@@ -478,10 +480,10 @@ export default function TenantBillsPaymentsPage() {
       )}
 
       {/* ============ Modal ชำระเงิน ============ */}
-      {isPayModalOpen && selectedBill && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsPayModalOpen(false)} />
-          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 shadow-2xl w-full sm:w-[95%] sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 space-y-5 animate-scale-in max-h-[92vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      {mounted && isPayModalOpen && selectedBill && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsPayModalOpen(false)} />
+          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 shadow-2xl w-full max-w-sm rounded-3xl p-6 space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto z-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
             {/* หัว */}
             <div className="text-center">
@@ -549,7 +551,8 @@ export default function TenantBillsPaymentsPage() {
               ปิด
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
