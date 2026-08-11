@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, onSnapshot, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
@@ -19,6 +20,7 @@ interface Room {
 
 export default function TenantRoomRequestPage() {
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -33,6 +35,10 @@ export default function TenantRoomRequestPage() {
   const [userData, setUserData] = useState<any>(null);
   const [hasActiveRoom, setHasActiveRoom] = useState(false);
   const [roomDataLoading, setRoomDataLoading] = useState(true);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // ฟังการเปลี่ยนแปลงของ User document เพื่อเช็คสิทธิ์จองหลายห้อง
   useEffect(() => {
@@ -496,9 +502,9 @@ export default function TenantRoomRequestPage() {
       )}
 
       {/* โมดอลยืนยันการจอง */}
-      {selectedRoom && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--text-main)]/40 backdrop-blur-sm">
-          <div className="glass-panel bg-white/80 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-white/50">
+      {mounted && selectedRoom && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in border border-white/80">
             <div className="p-8">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent-brown)] to-[var(--accent-dark)] text-white flex items-center justify-center mb-6 shadow-lg shadow-[var(--shadow-color)]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -508,15 +514,15 @@ export default function TenantRoomRequestPage() {
                 คุณกำลังจะส่งคำขอจอง <strong>ห้อง {selectedRoom.roomNumber} ตึก {selectedRoom.building}</strong> ให้กับผู้ดูแลระบบพิจารณา
               </p>
               
-              <div className="bg-white/50 backdrop-blur-md p-5 rounded-2xl mb-8 border border-[var(--glass-border)] shadow-inner">
+              <div className="bg-slate-50/80 backdrop-blur-md p-5 rounded-2xl mb-8 border border-slate-200/60 shadow-inner">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-sm font-medium text-[var(--text-muted)]">ค่าเช่ารายเดือน</span>
                   <span className="text-lg font-bold text-[var(--accent-dark)]">฿{selectedRoom.rentPrice.toLocaleString()}</span>
                 </div>
-                <div className="w-full h-px bg-[var(--glass-border)] my-3"></div>
+                <div className="w-full h-px bg-slate-200/60 my-3"></div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-[var(--text-muted)]">ประเภทห้อง</span>
-                  <span className="text-sm font-semibold text-[var(--text-main)] bg-white px-2 py-1 rounded-md shadow-sm border border-slate-100">{selectedRoom.roomType === 'aircon' ? 'ห้องแอร์ ❄️' : 'พัดลม 🌀'}</span>
+                  <span className="text-sm font-semibold text-[var(--text-main)] bg-white px-2.5 py-1 rounded-md shadow-sm border border-slate-200">{selectedRoom.roomType === 'aircon' ? 'ห้องแอร์ ❄️' : 'พัดลม 🌀'}</span>
                 </div>
               </div>
 
@@ -533,7 +539,7 @@ export default function TenantRoomRequestPage() {
                   type="button"
                   onClick={handleRequestRoom}
                   disabled={submitting}
-                  className="flex-1 px-4 py-3 glass-button rounded-lg font-semibold disabled:opacity-70 flex items-center justify-center shadow-md shadow-[var(--shadow-color)]"
+                  className="flex-1 px-4 py-3 glass-button rounded-xl font-semibold disabled:opacity-70 flex items-center justify-center shadow-md shadow-[var(--shadow-color)]"
                 >
                   {submitting ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -544,7 +550,8 @@ export default function TenantRoomRequestPage() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
