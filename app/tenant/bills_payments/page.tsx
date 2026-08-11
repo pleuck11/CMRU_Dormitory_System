@@ -508,7 +508,7 @@ export default function TenantBillsPaymentsPage() {
                 {(bankAccount.promptPayNumber || bankAccount.qrImageUrl) && (
                   <div className="flex flex-col items-center gap-3">
                     <img 
-                      src={bankAccount.promptPayNumber ? `https://promptpay.io/${bankAccount.promptPayNumber}/${selectedBill.totalAmount}.png` : bankAccount.qrImageUrl} 
+                      src={bankAccount.promptPayNumber ? `https://promptpay.io/${bankAccount.promptPayNumber.replace(/[^0-9]/g, '')}/${selectedBill.totalAmount}.png` : bankAccount.qrImageUrl} 
                       alt="QR PromptPay" 
                       className="w-48 h-48 object-contain rounded-2xl border border-[var(--glass-border)] bg-white p-2 shadow-[0_4px_10px_rgba(0,0,0,0.05)]" 
                     />

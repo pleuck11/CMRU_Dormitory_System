@@ -505,17 +505,28 @@ export default function TenantDashboard() {
               <p className="text-3xl font-bold text-[var(--accent-dark)]">฿{(roomRequest.depositFee || roomRequest.rentPrice || 0).toLocaleString()}</p>
             </div>
 
-            {bankAccount ? (
+            {bankAccount && (bankAccount.promptPayNumber || bankAccount.qrImageUrl) ? (
               <>
-                {(bankAccount.promptPayNumber || bankAccount.qrImageUrl) && (
-                  <div className="flex flex-col items-center gap-3">
+                {bankAccount.promptPayNumber ? (
+                  <div className="flex flex-col items-center gap-2">
                     <img 
-                      src={bankAccount.promptPayNumber ? `https://promptpay.io/${bankAccount.promptPayNumber}/${roomRequest.depositFee || roomRequest.rentPrice}.png` : bankAccount.qrImageUrl} 
+                      src={`https://promptpay.io/${bankAccount.promptPayNumber.replace(/[^0-9]/g, '')}/${roomRequest.depositFee || roomRequest.rentPrice}.png`} 
+                      alt="QR PromptPay" 
+                      className="w-48 h-48 object-contain rounded-2xl border border-[var(--glass-border)] bg-white p-2 shadow-sm" 
+                    />
+                    <p className="text-xs text-[var(--text-muted)] font-medium">
+                      พร้อมเพย์: <span className="font-bold text-[var(--text-main)]">{bankAccount.promptPayNumber}</span>
+                    </p>
+                  </div>
+                ) : bankAccount.qrImageUrl ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <img 
+                      src={bankAccount.qrImageUrl} 
                       alt="QR PromptPay" 
                       className="w-48 h-48 object-contain rounded-2xl border border-[var(--glass-border)] bg-white p-2 shadow-sm" 
                     />
                   </div>
-                )}
+                ) : null}
 
                 <div className="pt-2">
                   <label className={`w-full glass-button flex flex-col items-center justify-center py-3 rounded-xl font-bold cursor-pointer transition-all ${uploading ? 'opacity-70 pointer-events-none' : ''}`}>
@@ -537,9 +548,31 @@ export default function TenantDashboard() {
                 </div>
               </>
             ) : (
-              <div className="text-center py-6 text-[var(--text-muted)]">
-                <p className="text-sm font-medium">ยังไม่มีข้อมูลบัญชีธนาคาร</p>
-                <p className="text-xs mt-1">กรุณาติดต่อแอดมิน</p>
+              <div className="space-y-4">
+                <div className="text-center py-4 px-3 bg-amber-50/80 border border-amber-200/60 rounded-2xl text-amber-800">
+                  <p className="text-sm font-semibold">ยังไม่มีข้อมูลบัญชีธนาคาร/พร้อมเพย์</p>
+                  <p className="text-xs mt-1 text-amber-700">แอดมินยังไม่ได้ตั้งค่าเบอร์พร้อมเพย์ในระบบ</p>
+                  <p className="text-[11px] mt-1 text-amber-600 font-medium">(ตั้งค่าได้ที่เมนู "ยอดชำระและบิล" ในฝั่งผู้ดูแลระบบ)</p>
+                </div>
+
+                <div className="pt-1">
+                  <label className={`w-full glass-button flex flex-col items-center justify-center py-3 rounded-xl font-bold cursor-pointer transition-all ${uploading ? 'opacity-70 pointer-events-none' : ''}`}>
+                    {uploading ? (
+                      <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mb-1" />กำลังอัปโหลด...</>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="17 8 12 3 7 8"/>
+                          <line x1="12" x2="12" y1="3" y2="15"/>
+                        </svg>
+                        อัปโหลดสลิปยืนยันการชำระเงิน
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleVerifySlip} disabled={uploading} />
+                  </label>
+                  <p className="text-[10px] text-center text-[var(--text-muted)] mt-2">หากชำระเงินแล้ว สามารถอัปโหลดสลิปเพื่อแจ้งผู้ดูแลได้ทันที</p>
+                </div>
               </div>
             )}
 
