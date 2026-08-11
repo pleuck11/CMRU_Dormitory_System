@@ -486,7 +486,7 @@ export default function TenantDashboard() {
       {isPayModalOpen && roomRequest && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !uploading && setIsPayModalOpen(false)} />
-          <div className="relative glass-panel w-full sm:w-[95%] sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 space-y-5 animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 max-h-[92vh] overflow-y-auto">
+          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 w-full sm:w-[95%] sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 space-y-5 animate-scale-in max-h-[92vh] overflow-y-auto shadow-2xl">
 
             <div className="text-center">
               <div className="w-12 h-12 rounded-2xl bg-[var(--accent-light)]/50 border border-[var(--accent-brown)]/20 text-[var(--accent-dark)] flex items-center justify-center mx-auto mb-3">
@@ -512,7 +512,7 @@ export default function TenantDashboard() {
                     <img 
                       src={`https://promptpay.io/${bankAccount.promptPayNumber.replace(/[^0-9]/g, '')}/${roomRequest.depositFee || roomRequest.rentPrice}.png`} 
                       alt="QR PromptPay" 
-                      className="w-48 h-48 object-contain rounded-2xl border border-[var(--glass-border)] bg-white p-2 shadow-sm" 
+                      className="w-48 h-48 object-contain rounded-2xl border border-slate-200 bg-white p-2 shadow-md" 
                     />
                     <p className="text-xs text-[var(--text-muted)] font-medium">
                       พร้อมเพย์: <span className="font-bold text-[var(--text-main)]">{bankAccount.promptPayNumber}</span>
@@ -523,7 +523,7 @@ export default function TenantDashboard() {
                     <img 
                       src={bankAccount.qrImageUrl} 
                       alt="QR PromptPay" 
-                      className="w-48 h-48 object-contain rounded-2xl border border-[var(--glass-border)] bg-white p-2 shadow-sm" 
+                      className="w-48 h-48 object-contain rounded-2xl border border-slate-200 bg-white p-2 shadow-md" 
                     />
                   </div>
                 ) : null}
@@ -587,7 +587,7 @@ export default function TenantDashboard() {
       {isMoveOutModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !uploading && setIsMoveOutModalOpen(false)} />
-          <div className="relative glass-panel w-full sm:w-[95%] sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-5 animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 max-h-[92vh] overflow-y-auto">
+          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 w-full sm:w-[95%] sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-5 animate-scale-in max-h-[92vh] overflow-y-auto shadow-2xl">
             <div className="text-center">
               <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>

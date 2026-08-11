@@ -805,7 +805,7 @@ export default function BillsPaymentsPage() {
       {isBankModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeBankModal} />
-          <div className="relative glass-panel w-[95%] max-w-md rounded-3xl p-6 space-y-5 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 shadow-2xl w-[95%] max-w-md rounded-3xl p-6 space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div>
               <h2 className="text-xl font-bold text-[var(--text-main)]">ตั้งค่าพร้อมเพย์รับเงิน</h2>
               <p className="text-sm text-[var(--text-muted)] mt-1">ตั้งค่าเบอร์พร้อมเพย์เพื่อให้ผู้เช่าสแกนจ่ายเงิน (QR จะสร้างอัตโนมัติตามยอดบิล)</p>
@@ -852,7 +852,7 @@ export default function BillsPaymentsPage() {
           />
 
           {/* โมดอล */}
-          <div className="relative glass-panel w-[95%] max-w-md rounded-3xl p-6 space-y-6 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 shadow-2xl w-[95%] max-w-md rounded-3xl p-6 space-y-6 animate-scale-in max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div>
               <h2 className="text-xl font-bold text-[var(--text-main)]">
                 สร้างบิลเดือนนี้

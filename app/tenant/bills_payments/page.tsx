@@ -481,7 +481,7 @@ export default function TenantBillsPaymentsPage() {
       {isPayModalOpen && selectedBill && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsPayModalOpen(false)} />
-          <div className="relative glass-panel w-full sm:w-[95%] sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 space-y-5 animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 max-h-[92vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="relative bg-white/95 backdrop-blur-2xl border border-white/80 shadow-2xl w-full sm:w-[95%] sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 space-y-5 animate-scale-in max-h-[92vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
             {/* หัว */}
             <div className="text-center">
