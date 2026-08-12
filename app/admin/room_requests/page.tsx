@@ -668,44 +668,45 @@ export default function AdminRoomRequestsPage() {
       </div>
 
       {/* โมดอลแสดงรูปภาพเอกสาร */}
-      {selectedDocs && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedDocs(null)}>
-          <div className="bg-white rounded-3xl p-6 w-full max-w-4xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-[var(--text-main)]">เอกสารยืนยันการจอง</h3>
-              <button onClick={() => setSelectedDocs(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      {mounted && selectedDocs && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md" onClick={() => setSelectedDocs(null)}>
+          <div className="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-4xl max-h-[85vh] overflow-y-auto shadow-2xl relative z-10" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
+              <h3 className="text-lg sm:text-xl font-bold text-[var(--text-main)]">เอกสารยืนยันการจอง</h3>
+              <button onClick={() => setSelectedDocs(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-semibold text-gray-700 mb-2">สลิปการโอนเงินค่ามัดจำ</h4>
+                <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">สลิปการโอนเงินค่ามัดจำ</h4>
                 {selectedDocs.slipUrl ? (
-                  <img src={selectedDocs.slipUrl} alt="Slip" className="w-full h-auto rounded-xl border border-gray-200 shadow-sm" />
+                  <img src={selectedDocs.slipUrl} alt="Slip" className="w-full h-auto max-h-[55vh] object-contain rounded-xl border border-gray-200 shadow-sm" />
                 ) : (
-                  <div className="w-full h-48 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400">ไม่มีรูปภาพ</div>
+                  <div className="w-full h-48 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-sm">ไม่มีรูปภาพ</div>
                 )}
               </div>
               <div>
-                <h4 className="font-semibold text-gray-700 mb-2">สำเนาบัตรประชาชน</h4>
+                <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">สำเนาบัตรประชาชน</h4>
                 {selectedDocs.idCardUrl ? (
-                  <img src={selectedDocs.idCardUrl} alt="ID Card" className="w-full h-auto rounded-xl border border-gray-200 shadow-sm" />
+                  <img src={selectedDocs.idCardUrl} alt="ID Card" className="w-full h-auto max-h-[55vh] object-contain rounded-xl border border-gray-200 shadow-sm" />
                 ) : (
-                  <div className="w-full h-48 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400">ไม่มีรูปภาพ</div>
+                  <div className="w-full h-48 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-sm">ไม่มีรูปภาพ</div>
                 )}
               </div>
             </div>
-            <div className="mt-6 text-right">
-              <button onClick={() => setSelectedDocs(null)} className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl">ปิดหน้าต่าง</button>
+            <div className="mt-6 text-right pt-3 border-t border-gray-100">
+              <button onClick={() => setSelectedDocs(null)} className="w-full sm:w-auto px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition-colors">ปิดหน้าต่าง</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* โมดอลกำหนดวันที่เข้าอยู่ */}
-      {approvingReq && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
+      {mounted && approvingReq && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative z-10">
             <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">กำหนดวันที่เข้าอยู่</h3>
             <p className="text-sm text-[var(--text-muted)] mb-4">โปรดระบุวันที่พร้อมเข้าอยู่ สำหรับห้อง {approvingReq.building}{approvingReq.roomNumber}</p>
             
@@ -740,7 +741,8 @@ export default function AdminRoomRequestsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
