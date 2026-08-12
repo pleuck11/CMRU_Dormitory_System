@@ -368,7 +368,11 @@ export default function TenantLayout({
         {/* ส่วนหัวสำหรับมือถือ */}
         <header
           className="md:hidden flex items-center justify-between p-4 pb-3 glass-panel-solid border-b border-[var(--glass-border)] z-40 sticky top-0"
-          style={{ paddingTop: `calc(env(safe-area-inset-top, 0px) + 16px)` }}
+          style={{
+            paddingTop: `calc(max(env(safe-area-inset-top, 0px), 0px) + 16px)`,
+            paddingLeft: `max(env(safe-area-inset-left, 0px), 16px)`,
+            paddingRight: `max(env(safe-area-inset-right, 0px), 16px)`,
+          }}
         >
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm border border-slate-200 p-1 overflow-hidden flex-shrink-0">
@@ -393,7 +397,14 @@ export default function TenantLayout({
         </header>
 
         {/* เนื้อหาหน้าต่างๆ */}
-        <main className={`flex-1 flex flex-col overflow-x-hidden p-4 md:p-8 bg-transparent pb-28 md:pb-8 custom-scrollbar relative ${pathname === '/tenant/chat' ? 'overflow-y-hidden' : 'overflow-y-auto'}`}>
+        <main
+          className={`flex-1 flex flex-col overflow-x-hidden p-4 md:p-8 bg-transparent custom-scrollbar relative ${pathname === '/tenant/chat' ? 'overflow-y-hidden' : 'overflow-y-auto'}`}
+          style={{
+            paddingBottom: `calc(max(env(safe-area-inset-bottom, 0px), 0px) + 7rem)`,
+            paddingLeft: `max(env(safe-area-inset-left, 0px), 1rem)`,
+            paddingRight: `max(env(safe-area-inset-right, 0px), 1rem)`,
+          }}
+        >
           <NotificationProvider>
             <PageTransition className={pathname === '/tenant/chat' ? 'flex-1 flex flex-col min-h-0' : ''}>
               {children}
@@ -403,8 +414,12 @@ export default function TenantLayout({
 
         {/* แถบนำทางด้านล่างสำหรับมือถือ — Floating Capsule (เหมือน Admin) */}
         <nav
-          className="md:hidden fixed left-4 right-4 z-50 glass-panel !rounded-[2rem] px-2 py-2.5 shadow-[0_8px_32px_rgba(198,124,78,0.15)] print:hidden transition-all border border-white/60"
-          style={{ bottom: `calc(24px + env(safe-area-inset-bottom))` }}
+          className="md:hidden fixed z-50 glass-panel !rounded-[2rem] px-2 py-2.5 shadow-[0_8px_32px_rgba(198,124,78,0.15)] print:hidden transition-all border border-white/60"
+          style={{
+            bottom: `calc(24px + max(env(safe-area-inset-bottom, 0px), 0px))`,
+            left: `max(env(safe-area-inset-left, 0px), 16px)`,
+            right: `max(env(safe-area-inset-right, 0px), 16px)`,
+          }}
         >
           <div className="flex items-center justify-between px-2 max-w-md mx-auto">
             {[

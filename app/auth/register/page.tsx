@@ -149,7 +149,15 @@ export default function Register() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 font-sans relative overflow-hidden page-enter">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 font-sans relative overflow-hidden page-enter"
+      style={{
+        paddingTop: `calc(max(env(safe-area-inset-top, 0px), 0px) + 3rem)`,
+        paddingBottom: `calc(max(env(safe-area-inset-bottom, 0px), 0px) + 3rem)`,
+        paddingLeft: `max(env(safe-area-inset-left, 0px), 1rem)`,
+        paddingRight: `max(env(safe-area-inset-right, 0px), 1rem)`,
+      }}
+    >
       {/* วงกลมตกแต่งพื้นหลัง */}
       <div className="absolute top-[-15%] right-[-10%] w-96 h-96 bg-[var(--accent-light)] rounded-full mix-blend-multiply filter blur-3xl opacity-60 pointer-events-none orb-float-1" />
       <div className="absolute top-[30%] left-[-10%] w-72 h-72 bg-[var(--accent-brown)] rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none orb-float-2" />
@@ -158,8 +166,11 @@ export default function Register() {
       {/* ปุ่มกลับหน้าแรกแบบลอยตัว (Floating Back Button) */}
       <Link 
         href="/" 
-        className="absolute left-6 md:left-8 z-50 flex items-center justify-center gap-2 px-3 py-3 md:px-4 md:py-2.5 rounded-full bg-white/60 backdrop-blur-xl border border-white/50 text-[var(--text-main)] shadow-sm hover:bg-white/90 hover:shadow-md hover:scale-105 active:scale-95 transition-all group"
-        style={{ top: `calc(env(safe-area-inset-top, 0px) + 24px)` }}
+        className="absolute z-50 flex items-center justify-center gap-2 px-3 py-3 md:px-4 md:py-2.5 rounded-full bg-white/60 backdrop-blur-xl border border-white/50 text-[var(--text-main)] shadow-sm hover:bg-white/90 hover:shadow-md hover:scale-105 active:scale-95 transition-all group"
+        style={{
+          top: `calc(max(env(safe-area-inset-top, 0px), 0px) + 40px)`,
+          left: `max(env(safe-area-inset-left, 0px), 1.5rem)`,
+        }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform">
           <line x1="19" y1="12" x2="5" y2="12"></line>

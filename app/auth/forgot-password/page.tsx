@@ -49,7 +49,15 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans relative overflow-hidden">
+    <div
+      className="min-h-screen flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans relative overflow-hidden"
+      style={{
+        paddingTop: `calc(max(env(safe-area-inset-top, 0px), 0px) + 3rem)`,
+        paddingBottom: `calc(max(env(safe-area-inset-bottom, 0px), 0px) + 3rem)`,
+        paddingLeft: `max(env(safe-area-inset-left, 0px), 1rem)`,
+        paddingRight: `max(env(safe-area-inset-right, 0px), 1rem)`,
+      }}
+    >
       {/* วงกลมตกแต่ง */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[var(--accent-light)] rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
       <div className="absolute top-[20%] right-[-10%] w-72 h-72 bg-[var(--accent-brown)] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>

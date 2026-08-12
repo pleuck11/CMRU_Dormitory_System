@@ -162,6 +162,15 @@ html, body {
 .safe-y      { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
 .safe-all    { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 
+/* Smart Safe Area classes with minimum fallback values for mobile UI spacing */
+.safe-px {
+  padding-left: max(env(safe-area-inset-left), 1rem);
+  padding-right: max(env(safe-area-inset-right), 1rem);
+}
+.safe-pl { padding-left: max(env(safe-area-inset-left), 1rem); }
+.safe-pr { padding-right: max(env(safe-area-inset-right), 1rem); }
+.safe-pt-header { padding-top: max(env(safe-area-inset-top), 1rem); }
+
 /* margin variant */
 .safe-mt { margin-top:    env(safe-area-inset-top); }
 .safe-mb { margin-bottom: env(safe-area-inset-bottom); }

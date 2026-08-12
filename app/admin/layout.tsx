@@ -263,7 +263,11 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col h-[100dvh] relative z-10 w-full overflow-hidden print:overflow-visible">
         {/* Mobile top header */}
         <header className="md:hidden flex items-center justify-between p-4 pb-3 glass-panel bg-white/90 backdrop-blur-md border-b border-[var(--glass-border)] print:hidden rounded-none sticky top-0 z-40"
-          style={{ paddingTop: `calc(env(safe-area-inset-top, 0px) + 16px)` }}
+          style={{
+            paddingTop: `calc(max(env(safe-area-inset-top, 0px), 0px) + 16px)`,
+            paddingLeft: `max(env(safe-area-inset-left, 0px), 16px)`,
+            paddingRight: `max(env(safe-area-inset-right, 0px), 16px)`,
+          }}
         >
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-sm border border-[var(--glass-border)] p-[2px] overflow-hidden flex-shrink-0">
@@ -279,7 +283,14 @@ export default function AdminLayout({
         </header>
 
         {/* พื้นที่แสดงเนื้อหา */}
-        <main className={`flex-1 flex flex-col overflow-x-hidden p-4 md:p-8 pb-28 md:pb-8 print:p-0 print:bg-white print:overflow-visible custom-scrollbar relative ${pathname === '/admin/chat' ? 'overflow-y-hidden' : 'overflow-y-auto'}`}>
+        <main
+          className={`flex-1 flex flex-col overflow-x-hidden p-4 md:p-8 print:p-0 print:bg-white print:overflow-visible custom-scrollbar relative ${pathname === '/admin/chat' ? 'overflow-y-hidden' : 'overflow-y-auto'}`}
+          style={{
+            paddingBottom: `calc(max(env(safe-area-inset-bottom, 0px), 0px) + 7rem)`,
+            paddingLeft: `max(env(safe-area-inset-left, 0px), 1rem)`,
+            paddingRight: `max(env(safe-area-inset-right, 0px), 1rem)`,
+          }}
+        >
           <NotificationProvider>
             <PageTransition className={pathname === '/admin/chat' ? 'flex-1 flex flex-col min-h-0' : ''}>
               {children}
@@ -289,8 +300,12 @@ export default function AdminLayout({
         
         {/* แถบนำทางด้านล่างสำหรับมือถือ (Floating Capsule Design) */}
         <nav
-          className="md:hidden fixed left-4 right-4 z-40 glass-panel !rounded-[2rem] px-2 py-2.5 shadow-[0_8px_32px_rgba(198,124,78,0.15)] print:hidden transition-all border border-white/60"
-          style={{ bottom: `calc(24px + env(safe-area-inset-bottom))` }}
+          className="md:hidden fixed z-40 glass-panel !rounded-[2rem] px-2 py-2.5 shadow-[0_8px_32px_rgba(198,124,78,0.15)] print:hidden transition-all border border-white/60"
+          style={{
+            bottom: `calc(24px + max(env(safe-area-inset-bottom, 0px), 0px))`,
+            left: `max(env(safe-area-inset-left, 0px), 16px)`,
+            right: `max(env(safe-area-inset-right, 0px), 16px)`,
+          }}
         >
           <div className="flex items-center justify-between px-2 max-w-md mx-auto">
             {[

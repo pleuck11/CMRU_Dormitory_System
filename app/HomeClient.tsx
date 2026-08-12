@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import ResearchDisclaimerModal from "@/components/ResearchDisclaimerModal";
 
 export default function HomeClient({ initialSettings }: { initialSettings: any }) {
   const PLACEHOLDER_IMG = "data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22800%22%20height%3D%22600%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e2e8f0%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22sans-serif%22%20font-size%3D%2224%22%20fill%3D%22%2394a3b8%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E";
@@ -341,6 +342,9 @@ export default function HomeClient({ initialSettings }: { initialSettings: any }
           © {new Date().getFullYear()} YAYEE DORMITORY. ALL RIGHTS RESERVED.
         </div>
       </footer>
+
+      {/* Popup แจ้งเตือนการใช้งานข้อมูลเพื่อการวิจัย */}
+      <ResearchDisclaimerModal />
     </div>
   );
 }
