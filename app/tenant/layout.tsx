@@ -371,7 +371,12 @@ export default function TenantLayout({
       {drawerOpen && (
         <div className="md:hidden fixed inset-0 z-[60] bg-[var(--bg-color)]/95 backdrop-blur-2xl animate-in slide-in-from-bottom-5 fade-in duration-300 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 pb-3 pt-[max(env(safe-area-inset-top),20px)] bg-transparent sticky top-0 z-10">
+          <div
+            className="flex items-center justify-between px-4 pb-3 bg-transparent sticky top-0 z-10"
+            style={{
+              paddingTop: `calc(max(env(safe-area-inset-top, 0px), 28px) + 12px)`,
+            }}
+          >
             <div className="flex-1"></div>
             <h2 className="text-xl font-bold text-center text-[var(--text-main)] flex-1">เมนู</h2>
             <div className="flex-1 flex justify-end">
@@ -481,7 +486,7 @@ export default function TenantLayout({
         <header
           className="md:hidden flex items-center justify-between p-4 pb-3 bg-white border-b border-[var(--glass-border)] z-40 sticky top-0 shadow-sm"
           style={{
-            paddingTop: `calc(max(env(safe-area-inset-top, 0px), 0px) + 16px)`,
+            paddingTop: `calc(max(env(safe-area-inset-top, 0px), 28px) + 12px)`,
             paddingLeft: `max(env(safe-area-inset-left, 0px), 16px)`,
             paddingRight: `max(env(safe-area-inset-right, 0px), 16px)`,
           }}
