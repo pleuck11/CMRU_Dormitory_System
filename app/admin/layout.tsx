@@ -262,7 +262,7 @@ export default function AdminLayout({
       {/* เนื้อหาหลัก */}
       <div className="flex-1 flex flex-col h-[100dvh] relative z-10 w-full overflow-hidden print:overflow-visible">
         {/* Mobile top header */}
-        <header className="md:hidden flex items-center justify-between p-4 pb-3 glass-panel bg-white/90 backdrop-blur-md border-b border-[var(--glass-border)] print:hidden rounded-none sticky top-0 z-40"
+        <header className="md:hidden flex items-center justify-between p-4 pb-3 bg-white border-b border-[var(--glass-border)] print:hidden rounded-none sticky top-0 z-40 shadow-sm"
           style={{
             paddingTop: `calc(max(env(safe-area-inset-top, 0px), 0px) + 16px)`,
             paddingLeft: `max(env(safe-area-inset-left, 0px), 16px)`,
