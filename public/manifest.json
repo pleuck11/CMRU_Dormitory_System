@@ -2,7 +2,7 @@
   "name": "Yayee Dormitory Management System",
   "short_name": "Yayee Dorm",
   "description": "ระบบบริหารจัดการหอพักหยาหยี๋ออนไลน์ สำหรับผู้เช่าและผู้ดูแล ระบบจอดรถและบิลอัตโนมัติ",
-  "start_url": "/auth/login",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#734A2E",

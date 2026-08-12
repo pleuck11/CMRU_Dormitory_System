@@ -1,28 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { GraduationCap, X, CheckCircle2, Info } from "lucide-react";
 
 export default function ResearchDisclaimerModal() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAppMode, setIsAppMode] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    // ตรวจสอบว่าใช้งานในรูปแบบ Installed App (PWA / Standalone Mode) หรือไม่
-    const isStandalone =
+    // ตรวจสอบว่าใช้งานผ่านแอปพลิเคชัน (PWA Standalone Mode / Capacitor / Mobile App Wrapper) หรือไม่
+    const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as any).standalone === true ||
-      document.referrer.includes("android-app://");
+      document.referrer.includes("android-app://") ||
+      typeof (window as any).Capacitor !== "undefined" ||
+      navigator.userAgent.includes("Capacitor");
 
-    if (isStandalone) {
-      return; // ไม่ต้องแสดง popup หากติดตั้งเป็นแอปแล้ว
-    }
+    setIsAppMode(standalone);
 
     // ตรวจสอบว่าเคยปิด popup ใน session นี้หรือยัง
     const dismissed = sessionStorage.getItem("cmru_research_notice_dismissed");
     if (!dismissed) {
       setIsOpen(true);
+    } else if (standalone) {
+      // หากเข้าผ่านแอปและเคยปิดประกาศแล้ว ให้เปลี่ยนหน้าไป login ทันที
+      router.push("/auth/login");
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (isOpen) {
@@ -38,6 +44,11 @@ export default function ResearchDisclaimerModal() {
   const handleClose = () => {
     sessionStorage.setItem("cmru_research_notice_dismissed", "true");
     setIsOpen(false);
+
+    // หากใช้งานผ่านแอป หลังกดรับทราบให้พาไปหน้าเข้าสู่ระบบ (/auth/login) ทันที
+    if (isAppMode) {
+      router.push("/auth/login");
+    }
   };
 
   if (!isOpen) return null;
