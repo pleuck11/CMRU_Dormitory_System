@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { collection, query, getDocs, doc, updateDoc, orderBy, documentId, where, addDoc, serverTimestamp, setDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "@/lib/toast";
@@ -37,6 +38,11 @@ export default function AdminRoomRequestsPage() {
   const [selectedDocs, setSelectedDocs] = useState<{slipUrl?: string, idCardUrl?: string} | null>(null);
   const [approvingReq, setApprovingReq] = useState<RoomRequest | null>(null);
   const [moveInDate, setMoveInDate] = useState<string>("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -663,8 +669,8 @@ export default function AdminRoomRequestsPage() {
 
       {/* โมดอลแสดงรูปภาพเอกสาร */}
       {selectedDocs && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedDocs(null)}>
-          <div className="bg-white rounded-3xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedDocs(null)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-4xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-[var(--text-main)]">เอกสารยืนยันการจอง</h3>
               <button onClick={() => setSelectedDocs(null)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
@@ -698,7 +704,7 @@ export default function AdminRoomRequestsPage() {
 
       {/* โมดอลกำหนดวันที่เข้าอยู่ */}
       {approvingReq && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
             <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">กำหนดวันที่เข้าอยู่</h3>
             <p className="text-sm text-[var(--text-muted)] mb-4">โปรดระบุวันที่พร้อมเข้าอยู่ สำหรับห้อง {approvingReq.building}{approvingReq.roomNumber}</p>
