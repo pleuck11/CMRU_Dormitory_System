@@ -44,6 +44,9 @@ export default function ResearchDisclaimerModal() {
   const handleClose = () => {
     sessionStorage.setItem("cmru_research_notice_dismissed", "true");
     setIsOpen(false);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("cmru_research_notice_dismissed"));
+    }
 
     // หากใช้งานผ่านแอป หลังกดรับทราบให้พาไปหน้าเข้าสู่ระบบ (/auth/login) ทันที
     if (isAppMode) {

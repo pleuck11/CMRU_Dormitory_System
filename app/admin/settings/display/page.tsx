@@ -22,6 +22,9 @@ interface DisplaySettings {
   fanSize: string;
   fanDesc: string;
   fanDescSub: string;
+  announcementEnabled?: boolean;
+  announcementTitle?: string;
+  announcementBody?: string;
 }
 
 const PLACEHOLDER_IMG = "data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22800%22%20height%3D%22600%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e2e8f0%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22sans-serif%22%20font-size%3D%2224%22%20fill%3D%22%2394a3b8%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E";
@@ -75,6 +78,9 @@ export default function DisplaySettingsPage() {
     fanSize: "32",
     fanDesc: "เตียงนอน, ห้องน้ำในตัว, ตู้เสื้อผ้า, โต๊ะเรียน, โต๊ะเครื่องแป้ง",
     fanDescSub: "(มีอย่างละ 1 ชิ้น บรรยากาศโปร่งสบาย อากาศถ่ายเทสะดวก)",
+    announcementEnabled: false,
+    announcementTitle: "",
+    announcementBody: "",
   });
 
   useEffect(() => {
@@ -115,7 +121,10 @@ export default function DisplaySettingsPage() {
             fanDesc: data.fanDesc || formData.fanDesc,
             fanDescSub: data.fanDescSub || formData.fanDescSub,
             airconGallery: newAirconGallery,
-            fanGallery: newFanGallery
+            fanGallery: newFanGallery,
+            announcementEnabled: data.announcementEnabled !== undefined ? data.announcementEnabled : false,
+            announcementTitle: data.announcementTitle || "",
+            announcementBody: data.announcementBody || "",
           };
 
           setFormData(completeData);
@@ -407,6 +416,45 @@ export default function DisplaySettingsPage() {
       )}
 
       <form onSubmit={handleSave} className="space-y-6">
+        {/* ประกาศหน้าเว็บไซต์ (Popup Announcement) - สวิตช์เปิด/ปิด */}
+        <section className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-[#8B5E3C] flex items-center justify-center flex-shrink-0 shadow-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">ประกาศหน้าเว็บไซต์ (Popup Announcement)</h2>
+                <p className="text-xs text-gray-500 mt-0.5">เปิดหรือปิดการแสดงผลหน้าต่างประกาศบนหน้าแรกของเว็บไซต์</p>
+              </div>
+            </div>
+            
+            {/* Toggle Switch & Link to Admin Editor */}
+            <div className="flex items-center gap-3 self-end sm:self-auto">
+              <Link
+                href="/admin/announcements"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-[#8B5E3C] text-xs font-bold transition-colors border border-amber-200/60"
+              >
+                <span>แก้ไขข้อความ</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </Link>
+
+              <label className="relative inline-flex items-center cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.announcementEnabled === true}
+                  onChange={(e) => setFormData({ ...formData, announcementEnabled: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--accent-brown)]"></div>
+                <span className={`ml-2.5 text-xs font-bold ${formData.announcementEnabled === true ? "text-[var(--accent-brown)]" : "text-gray-400"}`}>
+                  {formData.announcementEnabled === true ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                </span>
+              </label>
+            </div>
+          </div>
+        </section>
+
         <section className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
             <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0">
