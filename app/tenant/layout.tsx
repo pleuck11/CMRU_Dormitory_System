@@ -36,6 +36,7 @@ export default function TenantLayout({
 
   const [menuOrder, setMenuOrder] = useState<string[]>([
     "dashboard",
+    "announcements",
     "room",
     "chat",
     "bills_payments",
@@ -49,7 +50,10 @@ export default function TenantLayout({
       if (savedOrder) {
         try {
           const parsed = JSON.parse(savedOrder);
-          if (Array.isArray(parsed) && parsed.length === 6) {
+          if (Array.isArray(parsed) && parsed.length >= 6) {
+            if (!parsed.includes("announcements")) {
+              parsed.splice(1, 0, "announcements");
+            }
             setMenuOrder(parsed);
           }
         } catch (e) {
@@ -178,6 +182,27 @@ export default function TenantLayout({
                       <rect width="7" height="5" x="3" y="16" />
                     </svg>
                     <span className="flex-1">แดชบอร์ด</span>
+                  </Link>
+                </div>
+              );
+            }
+
+            if (itemId === "announcements") {
+              return (
+                <div key={itemId}>
+                  <Link
+                    href="/tenant/announcements"
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-all duration-300 ${
+                      pathname === "/tenant/announcements"
+                        ? "bg-[var(--accent-brown)] text-white shadow-md shadow-[var(--shadow-color)] translate-x-1"
+                        : "text-[var(--text-muted)] hover:bg-[var(--glass-border)] hover:text-[var(--text-main)] hover:translate-x-1"
+                    }`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                      <path d="m3 11 18-5v12L3 14v-3z"/>
+                      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+                    </svg>
+                    <span className="flex-1">ประกาศข่าวสาร</span>
                   </Link>
                 </div>
               );
@@ -391,6 +416,12 @@ export default function TenantLayout({
             
             {/* กล่องเมนูกลุ่มต่างๆ */}
             {[
+              {
+                title: "ข่าวสารและประกาศ",
+                items: [
+                  { href: "/tenant/announcements", label: "ประกาศจากหอพัก", icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> }
+                ]
+              },
               {
                 title: "การจองและที่พัก",
                 items: [

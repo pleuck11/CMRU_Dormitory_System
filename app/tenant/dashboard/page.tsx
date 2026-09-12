@@ -1,12 +1,37 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, orderBy } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "@/lib/toast";
+
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+function formatThaiDate(timestamp: any): string {
+  if (!timestamp) return "เมื่อสักครู่";
+  try {
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return new Intl.DateTimeFormat("th-TH", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  } catch {
+    return "-";
+  }
+}
 
 interface RoomRequest {
   id: string;
@@ -56,6 +81,8 @@ export default function TenantDashboard() {
   const [isMoveOutModalOpen, setIsMoveOutModalOpen] = useState(false);
   const [moveOutRequested, setMoveOutRequested] = useState(false);
   const [expectedMoveOutDate, setExpectedMoveOutDate] = useState<Date | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
 
   const { user, loading: authLoading } = useAuth();
@@ -72,7 +99,7 @@ export default function TenantDashboard() {
       try {
         const tenantId = user.uid;
 
-        // ดึงข้อมูลห้อง, บิล, แจ้งซ่อม, คำขอจองห้อง พร้อมกันด้วย Promise.all
+        // ดึงข้อมูลห้อง, บิล, แจ้งซ่อม, คำขอจองห้อง, ประกาศ พร้อมกันด้วย Promise.all
         const roomQuery = query(collection(db, "rooms"), where("tenantId", "==", tenantId));
         const billQuery = query(collection(db, "bills"), where("tenantId", "==", tenantId));
         const repairQuery = query(collection(db, "repairs"), where("tenantId", "==", tenantId));
@@ -80,15 +107,17 @@ export default function TenantDashboard() {
         const bankAccountQuery = doc(db, "bankAccount", "owner");
         const settingsQuery = doc(db, "settings", "general");
         const userQuery = doc(db, "users", tenantId);
+        const annQuery = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
 
-        const [roomSnapshot, billSnapshot, repairSnapshot, roomReqSnapshot, bankAccountSnap, settingsSnap, userSnap] = await Promise.all([
+        const [roomSnapshot, billSnapshot, repairSnapshot, roomReqSnapshot, bankAccountSnap, settingsSnap, userSnap, annSnapshot] = await Promise.all([
           getDocs(roomQuery).catch(e => { console.error("Room fetch error:", e); return null; }),
           getDocs(billQuery).catch(e => { console.error("Bill fetch error:", e); return null; }),
           getDocs(repairQuery).catch(e => { console.error("Repair fetch error:", e); return null; }),
           getDocs(roomReqQuery).catch(e => { console.error("RoomReq fetch error:", e); return null; }),
           getDoc(bankAccountQuery).catch(e => { console.error("BankAccount fetch error:", e); return null; }),
           getDoc(settingsQuery).catch(e => { console.error("Settings fetch error:", e); return null; }),
-          getDoc(userQuery).catch(e => { console.error("User fetch error:", e); return null; })
+          getDoc(userQuery).catch(e => { console.error("User fetch error:", e); return null; }),
+          getDocs(annQuery).catch(e => { console.error("Announcement fetch error:", e); return null; })
         ]);
 
         if (roomSnapshot) roomSnapshot.forEach((doc) => setRoom(doc.data() as Room));
@@ -98,6 +127,14 @@ export default function TenantDashboard() {
           const repairList: Repair[] = [];
           repairSnapshot.forEach((doc) => repairList.push(doc.data() as Repair));
           setRepairs(repairList);
+        }
+
+        if (annSnapshot) {
+          const annList: Announcement[] = [];
+          annSnapshot.forEach((doc) => {
+            annList.push({ id: doc.id, ...doc.data() } as Announcement);
+          });
+          setAnnouncements(annList);
         }
 
         if (roomReqSnapshot && !roomReqSnapshot.empty) {
@@ -256,9 +293,80 @@ export default function TenantDashboard() {
 
   return (
     <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-3xl font-bold text-[var(--text-main)] tracking-tight">แดชบอร์ดผู้เช่า</h1>
+        {announcements.length > 0 && (
+          <Link
+            href="/tenant/announcements"
+            className="hidden sm:inline-flex items-center gap-2 text-xs font-semibold text-[var(--accent-brown)] hover:text-[var(--accent-dark)] bg-white/70 hover:bg-white border border-[var(--glass-border)] px-3.5 py-2 rounded-xl transition-all shadow-sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m3 11 18-5v12L3 14v-3z"/>
+              <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+            </svg>
+            ประกาศทั้งหมด ({announcements.length})
+          </Link>
+        )}
       </div>
+
+      {/* =====================================================
+          ประกาศและข่าวสารจากหอพัก (Announcements)
+      ====================================================== */}
+      {announcements.length > 0 && (
+        <div className="glass-panel rounded-3xl p-6 md:p-7 border-2 border-amber-200/70 bg-gradient-to-br from-white/95 via-amber-50/40 to-orange-50/20 shadow-sm relative overflow-hidden transition-all">
+          <div className="absolute top-0 right-0 w-72 h-72 bg-[var(--accent-light)] rounded-full mix-blend-multiply filter blur-3xl opacity-30 pointer-events-none"></div>
+
+          <div className="relative z-10 space-y-4">
+            {/* Header ประกาศ */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-100/80 pb-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--accent-brown)] to-[var(--accent-dark)] text-white shadow-md shadow-amber-900/10 shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m3 11 18-5v12L3 14v-3z"/>
+                    <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+                  </svg>
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-[var(--text-main)]">ประกาศจากหอพัก</h2>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-600 animate-pulse" />
+                      ล่าสุด
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    เผยแพร่เมื่อ: {formatThaiDate(announcements[0].createdAt)}
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                href="/tenant/announcements"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--accent-brown)] hover:text-[var(--accent-dark)] bg-white/80 hover:bg-white border border-amber-200/60 px-3 py-1.5 rounded-xl transition-all shadow-sm"
+              >
+                ดูประกาศทั้งหมด ({announcements.length})
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* เนื้อหาประกาศล่าสุด */}
+            <div className="space-y-2">
+              <h3 className="text-base md:text-lg font-bold text-amber-950">
+                {announcements[0].title}
+              </h3>
+
+              <div
+                className="tenant-announcement-body text-sm text-[var(--text-main)]/90 leading-relaxed bg-white/70 backdrop-blur-sm p-4 rounded-2xl border border-amber-100/80"
+                dangerouslySetInnerHTML={{
+                  __html: announcements[0].content || "",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* สถานะการจองห้องพัก (ถ้ามี) */}
       {roomRequest && (
@@ -634,7 +742,55 @@ export default function TenantDashboard() {
         document.body
       )}
 
+      {/* สไตล์ Rich Text สำหรับเนื้อหาประกาศ */}
+      <style jsx global>{`
+        .tenant-announcement-body h1 {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: #451a03;
+          margin-bottom: 0.35rem;
+        }
+        .tenant-announcement-body h2 {
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: #78350f;
+          margin-bottom: 0.35rem;
+        }
+        .tenant-announcement-body h3 {
+          font-size: 1rem;
+          font-weight: 600;
+          color: #92400e;
+          margin-bottom: 0.25rem;
+        }
+        .tenant-announcement-body p {
+          margin-bottom: 0.5rem;
+        }
+        .tenant-announcement-body ul {
+          list-style-type: disc !important;
+          margin-left: 1.5rem !important;
+          margin-bottom: 0.5rem !important;
+        }
+        .tenant-announcement-body ol {
+          list-style-type: decimal !important;
+          margin-left: 1.5rem !important;
+          margin-bottom: 0.5rem !important;
+        }
+        .tenant-announcement-body li {
+          margin-bottom: 0.25rem;
+        }
+        .tenant-announcement-body a {
+          color: var(--accent-brown);
+          text-decoration: underline;
+        }
+        .tenant-announcement-body blockquote {
+          border-left: 3px solid #d97706;
+          padding-left: 0.75rem;
+          font-style: italic;
+          color: #78350f;
+          margin: 0.75rem 0;
+        }
+      `}</style>
+
     </div>
   );
-
 }

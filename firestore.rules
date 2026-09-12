@@ -96,6 +96,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Announcements: ข่าวสารและประกาศ (ทุกคนอ่านได้, แอดมินจัดการได้)
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Default deny for everything else
     match /{document=**} {
       allow read, write: if false;

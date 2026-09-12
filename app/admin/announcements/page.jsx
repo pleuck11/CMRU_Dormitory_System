@@ -1,5 +1,6 @@
 "use client";
 
+import "ckeditor5/ckeditor5.css";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { db } from "@/lib/firebase";
@@ -30,13 +31,10 @@ import {
 } from "lucide-react";
 
 // =====================================================
-// CKEditor Dynamic Import (SSR Safe)
+// CKEditor Dynamic Import (SSR Safe & รองรับภาษาไทย)
 // =====================================================
 const EditorWrapper = dynamic(
   async () => {
-    // นำเข้า CSS ของ CKEditor 5
-    await import("ckeditor5/ckeditor5.css");
-
     const { CKEditor } = await import("@ckeditor/ckeditor5-react");
     const {
       ClassicEditor,
@@ -51,10 +49,18 @@ const EditorWrapper = dynamic(
       BlockQuote,
     } = await import("ckeditor5");
 
+    // ดึงไฟล์ภาษาไทยของ CKEditor 5
+    let translations;
+    try {
+      translations = (await import("ckeditor5/translations/th.js")).default;
+    } catch (err) {
+      console.warn("Could not load Thai translations for CKEditor", err);
+    }
+
     function EditorComponent({
       value,
       onChange,
-      placeholder = "พิมพ์รายละเอียดเนื้อหาประกาศที่นี่...",
+      placeholder = "เขียนรายละเอียดเนื้อหาประกาศที่นี่...",
     }) {
       return (
         <div className="ck-content-custom">
@@ -63,6 +69,8 @@ const EditorWrapper = dynamic(
             data={value || ""}
             config={{
               licenseKey: "GPL",
+              language: "th",
+              translations: translations ? [translations] : undefined,
               placeholder: placeholder,
               plugins: [
                 Essentials,
@@ -91,6 +99,33 @@ const EditorWrapper = dynamic(
                 "bulletedList",
                 "numberedList",
               ],
+              heading: {
+                options: [
+                  {
+                    model: "paragraph",
+                    title: "ข้อความปกติ",
+                    class: "ck-heading_paragraph",
+                  },
+                  {
+                    model: "heading1",
+                    view: "h1",
+                    title: "หัวข้อหลัก (H1)",
+                    class: "ck-heading_heading1",
+                  },
+                  {
+                    model: "heading2",
+                    view: "h2",
+                    title: "หัวข้อย่อย (H2)",
+                    class: "ck-heading_heading2",
+                  },
+                  {
+                    model: "heading3",
+                    view: "h3",
+                    title: "หัวข้อย่อย (H3)",
+                    class: "ck-heading_heading3",
+                  },
+                ],
+              },
             }}
             onChange={(_, editor) => {
               const data = editor.getData();
@@ -178,8 +213,13 @@ export default function AdminAnnouncementsPage() {
 
       setAnnouncements(list);
     } catch (error) {
-      console.error("Error fetching announcements:", error);
-      showToast("error", "ไม่สามารถดึงข้อมูลประกาศได้ กรุณาลองใหม่อีกครั้ง");
+      if (error?.code === "permission-denied") {
+        console.warn("Firestore permission-denied: ยังไม่ได้ตั้งค่าสิทธิ์ announcements ใน Firestore Rules", error);
+        showToast("error", "ยังไม่ได้ตั้งค่าสิทธิ์ (Security Rules) สำหรับ announcements ใน Firebase Console");
+      } else {
+        console.error("Error fetching announcements:", error);
+        showToast("error", "ไม่สามารถดึงข้อมูลประกาศได้ กรุณาลองใหม่อีกครั้ง");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -243,8 +283,13 @@ export default function AdminAnnouncementsPage() {
       setEditId(null);
       await fetchAnnouncements();
     } catch (error) {
-      console.error("Error saving announcement:", error);
-      showToast("error", "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      if (error?.code === "permission-denied") {
+        console.warn("Firestore permission-denied:", error);
+        showToast("error", "ไม่มีสิทธิ์บันทึกข้อมูล (Permission Denied) กรุณาตรวจสอบสิทธิ์ Admin ใน Firestore Rules");
+      } else {
+        console.error("Error saving announcement:", error);
+        showToast("error", "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -264,8 +309,13 @@ export default function AdminAnnouncementsPage() {
       }
       await fetchAnnouncements();
     } catch (error) {
-      console.error("Error deleting announcement:", error);
-      showToast("error", "เกิดข้อผิดพลาด ไม่สามารถลบประกาศได้");
+      if (error?.code === "permission-denied") {
+        console.warn("Firestore permission-denied:", error);
+        showToast("error", "ไม่มีสิทธิ์ลบข้อมูล (Permission Denied) กรุณาตรวจสอบสิทธิ์ Admin ใน Firestore Rules");
+      } else {
+        console.error("Error deleting announcement:", error);
+        showToast("error", "เกิดข้อผิดพลาด ไม่สามารถลบประกาศได้");
+      }
     } finally {
       setDeleteTargetId(null);
     }
@@ -606,18 +656,58 @@ export default function AdminAnnouncementsPage() {
           CSS จัดการความสูง CKEditor & สไตล์ Rich Text
       ====================================================== */}
       <style jsx global>{`
-        /* กำหนดความสูงและขอบมนของ CKEditor */
-        .ck-editor__editable_inline {
-          min-height: 220px !important;
-          border-bottom-left-radius: 0.75rem !important;
-          border-bottom-right-radius: 0.75rem !important;
-          padding: 1rem 1.25rem !important;
-        }
-        .ck-toolbar {
+        /* ปรับแต่งกล่องและแถบเครื่องมือ CKEditor */
+        .ck.ck-toolbar {
           border-top-left-radius: 0.75rem !important;
           border-top-right-radius: 0.75rem !important;
           background-color: #f8fafc !important;
           border-color: #e2e8f0 !important;
+          padding: 0.35rem 0.5rem !important;
+        }
+        .ck.ck-toolbar .ck-toolbar__items {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          align-items: center !important;
+          gap: 2px !important;
+        }
+        .ck-editor__editable_inline {
+          min-height: 240px !important;
+          border-bottom-left-radius: 0.75rem !important;
+          border-bottom-right-radius: 0.75rem !important;
+          border-color: #e2e8f0 !important;
+          padding: 1rem 1.25rem !important;
+          background-color: #ffffff !important;
+        }
+        .ck-editor__editable_inline.ck-focused {
+          border-color: #6366f1 !important;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+        }
+
+        /* ป้องกันไอคอนและปุ่มขยายขนาดเกินจริง */
+        .ck .ck-icon {
+          width: 18px !important;
+          height: 18px !important;
+          font-size: 18px !important;
+        }
+        .ck .ck-button:not(.ck-button_with-text) .ck-button__label {
+          display: none !important;
+        }
+        .ck .ck-button {
+          border-radius: 0.5rem !important;
+          cursor: pointer !important;
+          transition: background-color 0.15s ease !important;
+        }
+        .ck .ck-button:hover {
+          background-color: #f1f5f9 !important;
+        }
+        .ck .ck-button.ck-on {
+          background-color: #e0e7ff !important;
+          color: #4338ca !important;
+        }
+        .ck .ck-dropdown .ck-button__label {
+          font-size: 0.875rem !important;
+          font-weight: 500 !important;
+          color: #334155 !important;
         }
 
         /* คืนค่าสไตล์หัวข้อและลิสต์สำหรับ HTML ที่เรนเดอร์จาก CKEditor */
