@@ -13,6 +13,7 @@ interface Announcement {
   id: string;
   title: string;
   content: string;
+  imageUrl?: string | null;
   createdAt?: any;
   updatedAt?: any;
 }
@@ -356,6 +357,29 @@ export default function TenantDashboard() {
               <h3 className="text-base md:text-lg font-bold text-amber-950">
                 {announcements[0].title}
               </h3>
+
+              {/* รูปภาพประกอบประกาศ (ถ้ามี) */}
+              {announcements[0].imageUrl && (
+                <div className="pt-1">
+                  <div
+                    onClick={() => setSelectedAnnouncement(announcements[0])}
+                    className="relative group/img max-w-md cursor-pointer overflow-hidden rounded-2xl border border-amber-200/70 bg-white shadow-xs"
+                  >
+                    <img
+                      src={announcements[0].imageUrl}
+                      alt={announcements[0].title}
+                      className="w-full max-h-72 object-cover group-hover/img:scale-[1.02] transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/35 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-[2px]">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      คลิกเพื่อดูรูปภาพขนาดเต็ม
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div
                 className="tenant-announcement-body text-sm text-[var(--text-main)]/90 leading-relaxed bg-white/70 backdrop-blur-sm p-4 rounded-2xl border border-amber-100/80"
@@ -742,6 +766,35 @@ export default function TenantDashboard() {
         document.body
       )}
 
+      {/* Lightbox ดูรูปภาพประกาศขนาดเต็ม */}
+      {selectedAnnouncement?.imageUrl && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedAnnouncement(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setSelectedAnnouncement(null)}
+              className="absolute -top-11 right-0 p-2 text-white/80 hover:text-white transition-colors"
+              title="ปิด"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <img
+              src={selectedAnnouncement.imageUrl}
+              alt={selectedAnnouncement.title}
+              className="max-h-[85vh] max-w-full rounded-2xl object-contain shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* สไตล์ Rich Text สำหรับเนื้อหาประกาศ */}
       <style jsx global>{`
         .tenant-announcement-body h1 {
@@ -788,6 +841,13 @@ export default function TenantDashboard() {
           font-style: italic;
           color: #78350f;
           margin: 0.75rem 0;
+        }
+        .tenant-announcement-body img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.75rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
         }
       `}</style>
 

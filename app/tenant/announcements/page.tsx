@@ -17,12 +17,15 @@ import {
   Loader2,
   X,
   BellRing,
+  Eye,
+  Image as ImageIcon,
 } from "lucide-react";
 
 interface AnnouncementItem {
   id: string;
   title: string;
   content: string;
+  imageUrl?: string | null;
   createdAt?: any;
   updatedAt?: any;
 }
@@ -47,6 +50,7 @@ export default function TenantAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
 
   const fetchAnnouncements = useCallback(async () => {
     try {
@@ -167,6 +171,12 @@ export default function TenantAnnouncementsPage() {
                         ล่าสุด
                       </span>
                     )}
+                    {item.imageUrl && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 border border-amber-200/70">
+                        <ImageIcon className="h-3 w-3" />
+                        มีรูปภาพแนบ
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
                     <Calendar className="h-3.5 w-3.5 text-amber-600" />
@@ -177,6 +187,26 @@ export default function TenantAnnouncementsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* รูปภาพประกอบประกาศ (ถ้ามี) */}
+              {item.imageUrl && (
+                <div className="mt-4">
+                  <div
+                    onClick={() => setViewingImage(item.imageUrl || null)}
+                    className="relative group/img max-w-xl cursor-pointer overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/30 shadow-xs"
+                  >
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="w-full max-h-96 object-cover group-hover/img:scale-[1.02] transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/35 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-[2px]">
+                      <Eye className="h-4 w-4" />
+                      คลิกเพื่อดูรูปภาพขนาดเต็ม
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Rich Text เนื้อหาประกาศ */}
               <div className="mt-4">
@@ -202,6 +232,33 @@ export default function TenantAnnouncementsPage() {
               ? "ลองค้นหาด้วยคำหรือคีย์เวิร์ดอื่น"
               : "เมื่อผู้ดูแลหอพักลงประกาศ ข้อมูลจะปรากฏที่หน้านี้"}
           </p>
+        </div>
+      )}
+
+      {/* =====================================================
+          LightBox Preview Modal (รูปภาพขนาดเต็ม)
+      ====================================================== */}
+      {viewingImage && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setViewingImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setViewingImage(null)}
+              className="absolute -top-11 right-0 p-2 text-white/80 hover:text-white transition-colors"
+              title="ปิด"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <img
+              src={viewingImage}
+              alt="รูปภาพขนาดเต็ม"
+              className="max-h-[85vh] max-w-full rounded-2xl object-contain shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       )}
 
@@ -251,6 +308,13 @@ export default function TenantAnnouncementsPage() {
           font-style: italic;
           color: #78350f;
           margin: 1rem 0;
+        }
+        .tenant-announcement-content img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.75rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
         }
       `}</style>
     </div>

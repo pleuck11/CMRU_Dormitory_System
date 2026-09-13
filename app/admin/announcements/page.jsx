@@ -1,7 +1,7 @@
 "use client";
 
 import "ckeditor5/ckeditor5.css";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { db } from "@/lib/firebase";
 import {
@@ -28,6 +28,9 @@ import {
   Calendar,
   Save,
   RotateCcw,
+  Image as ImageIcon,
+  Upload,
+  Eye,
 } from "lucide-react";
 
 // =====================================================
@@ -179,6 +182,16 @@ export default function AdminAnnouncementsPage() {
   const [content, setContent] = useState("");
   const [editId, setEditId] = useState(null);
 
+  // Image Upload States
+  const [imageFile, setImageFile] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Modal Image Preview (LightBox)
+  const [viewingImage, setViewingImage] = useState(null);
+
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -187,6 +200,7 @@ export default function AdminAnnouncementsPage() {
 
   // Delete Confirmation Modal State
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deleteTargetImageUrl, setDeleteTargetImageUrl] = useState(null);
 
   // แสดงการแจ้งเตือนและปิดอัตโนมัติ
   const showToast = (type, message) => {
@@ -194,6 +208,36 @@ export default function AdminAnnouncementsPage() {
     setTimeout(() => {
       setNotification(null);
     }, 4000);
+  };
+
+  // จัดการการเลือกรูปภาพ
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("error", "กรุณาเลือกไฟล์รูปภาพเท่านั้น (JPG, PNG, WEBP)");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("error", "ขนาดไฟล์รูปภาพต้องไม่เกิน 10MB");
+      return;
+    }
+
+    setImageFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setImagePreview(objectUrl);
+  };
+
+  // ลบรูปภาพที่เลือก
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImageUrl("");
+    setImagePreview("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   // =====================================================
@@ -258,12 +302,35 @@ export default function AdminAnnouncementsPage() {
     try {
       setIsSubmitting(true);
 
+      // จัดการอัปโหลดรูปภาพ (ถ้ามีไฟล์ใหม่เลือกไว้)
+      let finalImageUrl = imageUrl;
+      if (imageFile) {
+        setIsUploadingImage(true);
+        const uploadData = new FormData();
+        uploadData.append("file", imageFile);
+
+        const uploadRes = await fetch("/api/upload-announcement-image", {
+          method: "POST",
+          body: uploadData,
+        });
+
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json().catch(() => ({}));
+          throw new Error(errData.error || "อัปโหลดรูปภาพไม่สำเร็จ");
+        }
+
+        const data = await uploadRes.json();
+        finalImageUrl = data.url;
+        setIsUploadingImage(false);
+      }
+
       if (editId) {
         // แก้ไขประกาศเดิม
         const docRef = doc(db, "announcements", editId);
         await updateDoc(docRef, {
           title: title.trim(),
           content: content,
+          imageUrl: finalImageUrl || null,
           updatedAt: serverTimestamp(),
         });
         showToast("success", "บันทึกการแก้ไขประกาศสำเร็จแล้ว");
@@ -272,15 +339,14 @@ export default function AdminAnnouncementsPage() {
         await addDoc(collection(db, "announcements"), {
           title: title.trim(),
           content: content,
+          imageUrl: finalImageUrl || null,
           createdAt: serverTimestamp(),
         });
         showToast("success", "เผยแพร่ประกาศใหม่สำเร็จแล้ว");
       }
 
       // Reset Form
-      setTitle("");
-      setContent("");
-      setEditId(null);
+      handleCancelEdit();
       await fetchAnnouncements();
     } catch (error) {
       if (error?.code === "permission-denied") {
@@ -288,10 +354,11 @@ export default function AdminAnnouncementsPage() {
         showToast("error", "ไม่มีสิทธิ์บันทึกข้อมูล (Permission Denied) กรุณาตรวจสอบสิทธิ์ Admin ใน Firestore Rules");
       } else {
         console.error("Error saving announcement:", error);
-        showToast("error", "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+        showToast("error", error?.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
       }
     } finally {
       setIsSubmitting(false);
+      setIsUploadingImage(false);
     }
   };
 
@@ -302,6 +369,19 @@ export default function AdminAnnouncementsPage() {
     if (!deleteTargetId) return;
 
     try {
+      // พยายามลบรูปจาก Vercel Blob ถ้ามีรูปภาพ
+      if (deleteTargetImageUrl && deleteTargetImageUrl.includes("public.blob.vercel-storage.com")) {
+        try {
+          await fetch("/api/delete-blob-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: deleteTargetImageUrl }),
+          });
+        } catch (delErr) {
+          console.warn("Could not delete announcement image blob:", delErr);
+        }
+      }
+
       await deleteDoc(doc(db, "announcements", deleteTargetId));
       showToast("success", "ลบประกาศเรียบร้อยแล้ว");
       if (editId === deleteTargetId) {
@@ -318,6 +398,7 @@ export default function AdminAnnouncementsPage() {
       }
     } finally {
       setDeleteTargetId(null);
+      setDeleteTargetImageUrl(null);
     }
   };
 
@@ -326,6 +407,12 @@ export default function AdminAnnouncementsPage() {
     setEditId(item.id);
     setTitle(item.title || "");
     setContent(item.content || "");
+    setImageFile(null);
+    setImageUrl(item.imageUrl || "");
+    setImagePreview(item.imageUrl || "");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -334,6 +421,12 @@ export default function AdminAnnouncementsPage() {
     setEditId(null);
     setTitle("");
     setContent("");
+    setImageFile(null);
+    setImageUrl("");
+    setImagePreview("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -354,7 +447,7 @@ export default function AdminAnnouncementsPage() {
               </h1>
             </div>
             <p className="mt-1 text-sm text-slate-500">
-              สร้าง เผยแพร่ และจัดการประกาศข่าวสารสำหรับผู้ใช้งานในระบบ
+              สร้าง เผยแพร่ และจัดการประกาศข่าวสารสำหรับผู้ใช้งานในระบบ พร้อมรองรับรูปภาพประกอบ
             </p>
           </div>
 
@@ -439,6 +532,76 @@ export default function AdminAnnouncementsPage() {
               />
             </div>
 
+            {/* ส่วนอัปโหลดรูปภาพประกาศ */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-slate-700">
+                  รูปภาพประกอบประกาศ <span className="text-xs text-slate-400 font-normal">(ถ้ามี)</span>
+                </label>
+                {imagePreview && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="text-xs font-medium text-rose-500 hover:text-rose-700 inline-flex items-center gap-1"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    ลบรูปภาพ
+                  </button>
+                )}
+              </div>
+
+              {imagePreview ? (
+                <div className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 max-h-72 flex items-center justify-center">
+                  <img
+                    src={imagePreview}
+                    alt="ตัวอย่างรูปภาพประกาศ"
+                    className="w-full h-auto max-h-72 object-contain rounded-2xl"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setViewingImage(imagePreview)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white/90 hover:bg-white text-xs font-medium text-slate-700 shadow-md backdrop-blur-sm transition-all"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      ดูรูปขนาดเต็ม
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs font-medium text-white shadow-md transition-all"
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      เปลี่ยนรูปภาพ
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 hover:bg-slate-100/50 hover:border-indigo-300 transition-all cursor-pointer group"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 mb-2 group-hover:scale-110 transition-transform">
+                    <ImageIcon className="h-6 w-6" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-700">
+                    คลิกเพื่ออัปโหลดรูปภาพประกาศ
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    รองรับไฟล์ JPG, PNG, WEBP (ขนาดไม่เกิน 10MB)
+                  </p>
+                </div>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </div>
+
             {/* เครื่องมือเขียนข้อความ */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -471,7 +634,7 @@ export default function AdminAnnouncementsPage() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    กำลังบันทึก...
+                    {isUploadingImage ? "กำลังอัปโหลดรูปภาพ..." : "กำลังบันทึก..."}
                   </>
                 ) : editId ? (
                   <>
@@ -547,6 +710,12 @@ export default function AdminAnnouncementsPage() {
                             กำลังแก้ไข
                           </span>
                         )}
+                        {item.imageUrl && (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 border border-indigo-100">
+                            <ImageIcon className="h-3 w-3" />
+                            มีรูปภาพ
+                          </span>
+                        )}
                       </div>
 
                       {/* วันที่และเวลา */}
@@ -576,7 +745,10 @@ export default function AdminAnnouncementsPage() {
 
                       <button
                         type="button"
-                        onClick={() => setDeleteTargetId(item.id)}
+                        onClick={() => {
+                          setDeleteTargetId(item.id);
+                          setDeleteTargetImageUrl(item.imageUrl || null);
+                        }}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -585,8 +757,28 @@ export default function AdminAnnouncementsPage() {
                     </div>
                   </div>
 
+                  {/* แสดงรูปภาพประกาศ (ถ้ามี) */}
+                  {item.imageUrl && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <div
+                        onClick={() => setViewingImage(item.imageUrl)}
+                        className="relative group/img max-w-lg cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                      >
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="w-full max-h-80 object-cover group-hover/img:scale-102 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-medium">
+                          <Eye className="h-4 w-4" />
+                          คลิกเพื่อดูรูปขนาดเต็ม
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* แสดงเนื้อหาประกาศพร้อมคลาสจัดแต่ง Rich Text */}
-                  <div className="mt-4 pt-4 border-t border-slate-100">
+                  <div className={`mt-4 ${!item.imageUrl ? "pt-4 border-t border-slate-100" : ""}`}>
                     <div
                       className="announcement-html-content text-sm text-slate-600 leading-relaxed"
                       dangerouslySetInnerHTML={{
@@ -633,7 +825,10 @@ export default function AdminAnnouncementsPage() {
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setDeleteTargetId(null)}
+                  onClick={() => {
+                    setDeleteTargetId(null);
+                    setDeleteTargetImageUrl(null);
+                  }}
                   className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   ยกเลิก
@@ -646,6 +841,33 @@ export default function AdminAnnouncementsPage() {
                   ลบประกาศ
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* =====================================================
+            LightBox Preview Modal (รูปภาพขนาดเต็ม)
+        ====================================================== */}
+        {viewingImage && (
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+            onClick={() => setViewingImage(null)}
+          >
+            <div className="relative max-w-4xl max-h-[90vh] flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => setViewingImage(null)}
+                className="absolute -top-10 right-0 p-2 text-white/80 hover:text-white transition-colors"
+                title="ปิด"
+              >
+                <X className="h-6 w-6" />
+              </button>
+              <img
+                src={viewingImage}
+                alt="รูปภาพขนาดเต็ม"
+                className="max-h-[85vh] max-w-full rounded-2xl object-contain shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
             </div>
           </div>
         )}
@@ -755,6 +977,13 @@ export default function AdminAnnouncementsPage() {
           font-style: italic;
           color: #64748b;
           margin: 1rem 0;
+        }
+        .announcement-html-content img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.75rem;
+          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
         }
       `}</style>
     </div>
