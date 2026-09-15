@@ -58,8 +58,10 @@ export default function RepairPage() {
         const formData = new FormData();
         formData.append("file", image);
 
+        const token = await auth.currentUser?.getIdToken();
         const uploadRes = await fetch("/api/upload-repair", {
           method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: formData,
         });
 

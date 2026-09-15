@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, onSnapshot, updateDoc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "@/lib/toast";
 
@@ -173,24 +173,23 @@ export default function TenantRoomRequestPage() {
         status: "ติดจอง"
       });
 
-      // ส่งแจ้งเตือนไปยังแอดมินทุกคน (ใส่ try-catch แยกไว้เผื่อติด Security Rules ของผู้เช่า)
+      // ส่งแจ้งเตือนไปยังแอดมินทุกคนผ่าน Server API
       try {
-        const adminQ = query(collection(db, "users"), where("role", "==", "admin"));
-        const adminSnap = await getDocs(adminQ);
-        adminSnap.forEach((adminDoc) => {
-          fetch("/api/send-notification", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              targetUserId: adminDoc.id,
-              title: "🔔 มีคำขอจองห้องพักใหม่",
-              body: `ผู้เช่าส่งคำขอจองห้อง ${selectedRoom.building}${selectedRoom.roomNumber} กรุณาตรวจสอบ`,
-              url: "/admin/room_requests",
-            }),
-          }).catch(() => {});
-        });
+        const token = await auth.currentUser?.getIdToken();
+        fetch("/api/notify-admin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            title: "🔔 มีคำขอจองห้องพักใหม่",
+            body: `ผู้เช่าส่งคำขอจองห้อง ${selectedRoom.building}${selectedRoom.roomNumber} กรุณาตรวจสอบ`,
+            url: "/admin/room_requests",
+          }),
+        }).catch(() => {});
       } catch (notifyErr) {
-        console.warn("ไม่สามารถส่งแจ้งเตือนหาแอดมินได้ (Permission):", notifyErr);
+        console.warn("ไม่สามารถส่งแจ้งเตือนหาแอดมินได้:", notifyErr);
       }
 
       setSuccessMessage(newStatus === "queued" 
@@ -219,22 +218,21 @@ export default function TenantRoomRequestPage() {
       toast.success("ส่งคำขอสิทธิ์จองห้องเพิ่มเติมเรียบร้อยแล้ว");
       
       try {
-        const adminQ = query(collection(db, "users"), where("role", "==", "admin"));
-        const adminSnap = await getDocs(adminQ);
-        adminSnap.forEach((adminDoc) => {
-          fetch("/api/send-notification", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              targetUserId: adminDoc.id,
-              title: "🔐 มีคำขอสิทธิ์จองห้องเพิ่มเติม",
-              body: `ผู้เช่าส่งคำขอสิทธิ์จองห้องพักหลายห้อง กรุณาตรวจสอบและอนุมัติที่หน้ารายการคำขอจองห้องพัก`,
-              url: "/admin/room_requests",
-            }),
-          }).catch(() => {});
-        });
+        const token = await auth.currentUser?.getIdToken();
+        fetch("/api/notify-admin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            title: "🔐 มีคำขอสิทธิ์จองห้องเพิ่มเติม",
+            body: `ผู้เช่าส่งคำขอสิทธิ์จองห้องพักหลายห้อง กรุณาตรวจสอบและอนุมัติที่หน้ารายการคำขอจองห้องพัก`,
+            url: "/admin/room_requests",
+          }),
+        }).catch(() => {});
       } catch (notifyErr) {
-        console.warn("ไม่สามารถส่งแจ้งเตือนหาแอดมินได้ (Permission):", notifyErr);
+        console.warn("ไม่สามารถส่งแจ้งเตือนหาแอดมินได้:", notifyErr);
       }
     } catch (e: any) {
       toast.error("เกิดข้อผิดพลาดในการส่งคำขอ: " + e.message);

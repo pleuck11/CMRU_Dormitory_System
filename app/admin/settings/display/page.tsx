@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { toast } from "@/lib/toast";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "@/lib/cropImage";
@@ -249,8 +249,10 @@ export default function DisplaySettingsPage() {
   const uploadFile = async (file: File): Promise<string> => {
     const uploadData = new FormData();
     uploadData.append("file", file);
+    const token = await auth.currentUser?.getIdToken();
     const uploadRes = await fetch("/api/upload-room-image", {
       method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: uploadData,
     });
     if (!uploadRes.ok) throw new Error("อัปโหลดรูปภาพล้มเหลว");
@@ -261,9 +263,13 @@ export default function DisplaySettingsPage() {
   const deleteOldBlob = async (url: string) => {
     if (!url || !url.includes("public.blob.vercel-storage.com")) return;
     try {
+      const token = await auth.currentUser?.getIdToken();
       await fetch("/api/delete-blob-image", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ url })
       });
     } catch (e) {

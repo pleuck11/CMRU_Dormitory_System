@@ -8,12 +8,9 @@ export async function GET(req: Request) {
   try {
     const authHeader = req.headers.get("authorization");
     
-    // Allow triggering from Vercel CRON or using a specific secret token for manual trigger
-    if (
-      authHeader !== `Bearer ${process.env.CRON_SECRET}` &&
-      req.headers.get("user-agent") !== "vercel-cron/1.0"
-    ) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: "Unauthorized: Invalid or missing cron secret" }, { status: 401 });
     }
 
     const adminDb = getAdminDb();

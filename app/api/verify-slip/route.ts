@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { put } from '@vercel/blob';
+import { verifyAuthToken } from "@/lib/server-auth";
 
 // ---- ตั้งค่า Firebase Admin (ฝั่ง server) ----
 function getAdminDb() {
@@ -27,6 +28,14 @@ const MONTHLY_LIMIT = 90; // จำนวนสลิปสูงสุดต่
 // ---- รับ POST request สำหรับตรวจสอบสลิป ----
 export async function POST(req: NextRequest) {
   try {
+    const user = await verifyAuthToken(req);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized: กรุณาเข้าสู่ระบบก่อนทำรายการ" },
+        { status: 401 }
+      );
+    }
+
     // อ่านข้อมูล form-data ที่ส่งมา (ควรมี field "slip" เป็นไฟล์รูปภาพ)
     const formData = await req.formData();
     const slipFile = formData.get("slip") as File | null;
@@ -206,6 +215,10 @@ export async function POST(req: NextRequest) {
     let slipUrl = null;
     if (billId) {
       try {
+        const transRef = slipokData?.data?.transRef || null;
+        const senderBank = slipokData?.data?.sender?.bank?.short || slipokData?.data?.sender?.bank?.name || null;
+        const paidAmount = Number(slipAmount);
+
         if (type === "deposit") {
           // อัปโหลดรูปลง Vercel Blob สำหรับ deposit
           const buffer = await slipFile.arrayBuffer();
@@ -214,13 +227,34 @@ export async function POST(req: NextRequest) {
           });
           slipUrl = blob.url;
           
+          const reqData = docSnap.data();
+          const nextStatus = reqData?.idCardUrl ? "pending_approval" : (reqData?.status || "pending_docs");
           await docRef.update({
-            slipUrl: slipUrl
+            slipUrl: slipUrl,
+            transRef: transRef,
+            slipAmount: paidAmount,
+            paymentBank: senderBank,
+            depositPaid: true,
+            depositPaidAt: new Date().toISOString(),
+            status: nextStatus,
           });
         } else {
+          // อัปโหลดรูปลง Vercel Blob สำหรับบิลรายเดือน
+          const buffer = await slipFile.arrayBuffer();
+          const blob = await put(`slips/${billId}_${Date.now()}_${slipFile.name}`, buffer, {
+            access: 'public',
+          });
+          slipUrl = blob.url;
+
           await docRef.update({
             status: "paid",
             paidAt: new Date().toISOString(),
+            paymentDate: new Date().toISOString().split("T")[0],
+            paymentMethod: "transfer",
+            paymentBank: senderBank,
+            slipUrl: slipUrl,
+            transRef: transRef,
+            slipAmount: paidAmount,
           });
         }
       } catch (updateErr) {

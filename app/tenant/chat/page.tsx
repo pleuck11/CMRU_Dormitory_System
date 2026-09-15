@@ -15,11 +15,13 @@ interface Message {
   text: string;
   senderId: string;
   senderName: string;
-  senderRole: "tenant" | "admin";
+  senderRole: "tenant" | "admin" | "system";
   createdAt: Timestamp | null;
   type?: string;
   moveInDate?: string;
   roomLabel?: string;
+  newDate?: string;
+  newTime?: string;
 }
 
 async function deleteOldMessages(tenantId: string) {
@@ -415,6 +417,53 @@ export default function TenantChatPage() {
                         <div className="px-3 pb-2 flex justify-end">
                           <span className="text-[10px] text-emerald-400">{formatTime(msg.createdAt)}</span>
                         </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // ===== คำขอเปลี่ยนวันเข้าพัก (ผู้เช่าส่ง) =====
+                if (msg.type === "reschedule_request") {
+                  const fmtNewDate = msg.newDate
+                    ? new Date(msg.newDate).toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric" })
+                    : "";
+                  return (
+                    <div
+                      key={msg.id}
+                      ref={(el) => { if (el) messageRefs.current.set(msg.id, el); }}
+                      className="flex justify-end my-3"
+                    >
+                      <div className="bg-amber-50 border border-amber-200 rounded-2xl rounded-br-sm shadow-sm p-3.5 max-w-xs text-amber-950">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 mb-1">
+                          <span>📅 คำขอเปลี่ยนวันเข้าพัก</span>
+                        </div>
+                        <p className="text-xs font-semibold">
+                          วันที่ {fmtNewDate || msg.newDate}
+                        </p>
+                        {msg.newTime && <p className="text-[11px] text-amber-700">เวลา {msg.newTime} น.</p>}
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-amber-200/60">
+                          <span className="text-[10px] text-amber-600 bg-amber-100/80 px-2 py-0.5 rounded-full font-medium">
+                            รอแอดมินยืนยัน
+                          </span>
+                          <span className="text-[10px] text-amber-500">{formatTime(msg.createdAt)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // ===== ข้อความแจ้งเตือนจากระบบ (System Message) =====
+                if (msg.type === "system" || msg.senderRole === "system" || msg.senderId === "system") {
+                  return (
+                    <div
+                      key={msg.id}
+                      ref={(el) => { if (el) messageRefs.current.set(msg.id, el); }}
+                      className="flex justify-center my-3"
+                    >
+                      <div className="bg-slate-100/90 backdrop-blur-sm border border-slate-200 text-slate-700 rounded-full px-4 py-1.5 text-xs flex items-center gap-2 shadow-sm max-w-md text-center">
+                        <span className="text-sm">🔔</span>
+                        <span>{msg.text}</span>
+                        <span className="text-[10px] text-slate-400">{formatTime(msg.createdAt)}</span>
                       </div>
                     </div>
                   );

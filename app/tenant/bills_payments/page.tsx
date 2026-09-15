@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "@/lib/toast";
 
@@ -94,8 +94,10 @@ export default function TenantBillsPaymentsPage() {
       formData.append("slip", file);
       formData.append("billId", selectedBill.id);
 
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch("/api/verify-slip", {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       });
 

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { ReportPDF } from "@/components/ReportPDF";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface ReportData {
   month: string;
@@ -13,11 +15,91 @@ interface ReportData {
 }
 
 export default function ReportPage() {
-  const [reportData] = useState<ReportData[]>([]);
+  const [reportData, setReportData] = useState<ReportData[]>([]);
+  const [avgRevenue, setAvgRevenue] = useState(0);
+  const [avgExpenses, setAvgExpenses] = useState(0);
+  const [occupancyRate, setOccupancyRate] = useState(0);
+  const [totalNewTenants, setTotalNewTenants] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+
+    const fetchReportData = async () => {
+      try {
+        const [roomsSnap, billsSnap, requestsSnap] = await Promise.all([
+          getDocs(collection(db, "rooms")),
+          getDocs(collection(db, "bills")),
+          getDocs(collection(db, "room_requests")),
+        ]);
+
+        const totalRooms = roomsSnap.size;
+        const occupiedRooms = roomsSnap.docs.filter(d => d.data().status === "มีผู้เช่า").length;
+        const currentOccRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
+        setOccupancyRate(currentOccRate);
+
+        const currentYear = new Date().getFullYear();
+        const currentMonthIdx = new Date().getMonth(); // 0-11
+        
+        const THAI_MONTHS = [
+          "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+          "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+        ];
+
+        const monthlyData: ReportData[] = [];
+        let totalRev = 0;
+        let activeMonthCount = 0;
+        let newTenantsCount = 0;
+
+        for (let m = 0; m <= currentMonthIdx; m++) {
+          const monthKey = `${currentYear}-${String(m + 1).padStart(2, "0")}`;
+          let monthRevenue = 0;
+
+          billsSnap.docs.forEach((bDoc) => {
+            const b = bDoc.data();
+            if (b.status === "paid") {
+              const matchesMonth = b.month === monthKey ||
+                (b.paymentDate && b.paymentDate.startsWith(monthKey)) ||
+                (b.paidAt && b.paidAt.startsWith(monthKey));
+              if (matchesMonth) {
+                monthRevenue += Number(b.totalAmount) || 0;
+              }
+            }
+          });
+
+          let monthNewTenants = 0;
+          requestsSnap.docs.forEach((rDoc) => {
+            const r = rDoc.data();
+            if (r.status === "approved" && r.moveInDate && r.moveInDate.startsWith(monthKey)) {
+              monthNewTenants++;
+            }
+          });
+
+          monthlyData.push({
+            month: THAI_MONTHS[m],
+            revenue: monthRevenue,
+            expenses: 0,
+            occupancyRate: currentOccRate,
+            newTenants: monthNewTenants,
+          });
+
+          totalRev += monthRevenue;
+          newTenantsCount += monthNewTenants;
+          if (monthRevenue > 0) activeMonthCount++;
+        }
+
+        setReportData(monthlyData);
+        setAvgRevenue(activeMonthCount > 0 ? Math.round(totalRev / activeMonthCount) : 0);
+        setTotalNewTenants(newTenantsCount);
+      } catch (err) {
+        console.error("Error fetching report data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReportData();
   }, []);
 
   const exportCSV = () => {
@@ -76,7 +158,9 @@ export default function ReportPage() {
           <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--accent-light)] rounded-full mix-blend-multiply filter blur-2xl opacity-40 group-hover:opacity-60 transition-opacity" />
           <p className="text-sm font-bold text-[var(--text-muted)] mb-2 relative z-10">รายรับเฉลี่ย</p>
           <div className="flex items-baseline gap-2 relative z-10">
-            <span className="text-3xl font-extrabold text-[var(--text-main)] drop-shadow-sm">0</span>
+            <span className="text-3xl font-extrabold text-[var(--text-main)] drop-shadow-sm">
+              {loading ? "..." : avgRevenue.toLocaleString()}
+            </span>
             <span className="text-sm font-semibold text-[var(--text-muted)]">บ./เดือน</span>
           </div>
         </div>
@@ -84,7 +168,9 @@ export default function ReportPage() {
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-200 rounded-full mix-blend-multiply filter blur-2xl opacity-30 group-hover:opacity-50 transition-opacity" />
           <p className="text-sm font-bold text-[var(--text-muted)] mb-2 relative z-10">ค่าใช้จ่ายเฉลี่ย</p>
           <div className="flex items-baseline gap-2 relative z-10">
-            <span className="text-3xl font-extrabold text-[var(--text-main)] drop-shadow-sm">0</span>
+            <span className="text-3xl font-extrabold text-[var(--text-main)] drop-shadow-sm">
+              {loading ? "..." : avgExpenses.toLocaleString()}
+            </span>
             <span className="text-sm font-semibold text-[var(--text-muted)]">บ./เดือน</span>
           </div>
         </div>
@@ -92,7 +178,9 @@ export default function ReportPage() {
           <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--accent-brown)] rounded-full mix-blend-multiply filter blur-2xl opacity-20 group-hover:opacity-30 transition-opacity" />
           <p className="text-sm font-bold text-[var(--text-muted)] mb-2 relative z-10">อัตราเข้าพักเฉลี่ย</p>
           <div className="flex items-baseline gap-2 relative z-10">
-            <span className="text-3xl font-extrabold text-[var(--text-main)] drop-shadow-sm">0</span>
+            <span className="text-3xl font-extrabold text-[var(--text-main)] drop-shadow-sm">
+              {loading ? "..." : occupancyRate}
+            </span>
             <span className="text-sm font-semibold text-[var(--text-muted)]">%</span>
           </div>
         </div>
@@ -100,7 +188,9 @@ export default function ReportPage() {
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-200 rounded-full mix-blend-multiply filter blur-2xl opacity-30 group-hover:opacity-50 transition-opacity" />
           <p className="text-sm font-bold text-[var(--text-muted)] mb-2 relative z-10">ผู้เช่าใหม่ปีนี้</p>
           <div className="flex items-baseline gap-2 relative z-10">
-            <span className="text-3xl font-extrabold text-[var(--text-main)] drop-shadow-sm">0</span>
+            <span className="text-3xl font-extrabold text-[var(--text-main)] drop-shadow-sm">
+              {loading ? "..." : totalNewTenants.toLocaleString()}
+            </span>
             <span className="text-sm font-semibold text-[var(--text-muted)]">คน</span>
           </div>
         </div>

@@ -28,33 +28,85 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        // ดึงสถิติจริงจาก Firestore ที่นี่
-        
-        // ตัวอย่าง: นับจำนวนการแจ้งซ่อมทั้งหมด
-        const repairsCol = collection(db, "repairs");
-        const snapshot = await getCountFromServer(repairsCol);
-        const totalRepairs = snapshot.data().count;
-
-        setStats([
-            { name: "อัตราการเข้าพัก", value: "0%", change: "0%", changeType: "neutral", icon: "room" },
-            { name: "ยอดค้างชำระ", value: "฿0", change: "0", changeType: "neutral", icon: "money" },
-            { name: "รายรับเดือนนี้", value: "฿0", change: "0", changeType: "neutral", icon: "revenue" },
-            { name: "คิวงานซ่อม", value: `${totalRepairs} งาน`, change: "0", changeType: "neutral", icon: "wrench" },
-        ]);
-
-        // ดึงข้อมูลห้องทั้งหมดเพื่อแมป tenantId กับหมายเลขห้อง
+        // 1. ห้องพักและอัตราการเข้าพัก
         const roomsSnap = await getDocs(collection(db, "rooms"));
+        const totalRooms = roomsSnap.size;
+        const occupiedRooms = roomsSnap.docs.filter(d => d.data().status === "มีผู้เช่า").length;
+        const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
+
         const roomsMap = new Map();
         roomsSnap.docs.forEach(d => {
-            const data = d.data();
-            if (data.tenantId) {
-                roomsMap.set(data.tenantId, `${data.building}${data.roomNumber}`);
-            }
+          const data = d.data();
+          if (data.tenantId) {
+            roomsMap.set(data.tenantId, `${data.building}${data.roomNumber}`);
+          }
         });
 
+        // 2. บิลและการเงิน
+        const billsSnap = await getDocs(collection(db, "bills"));
+        const now = new Date();
+        const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        
+        let revenueThisMonth = 0;
+        let overdueAmount = 0;
+        let overdueCount = 0;
+
+        billsSnap.docs.forEach(d => {
+          const bData = d.data();
+          const amount = Number(bData.totalAmount) || 0;
+          if (bData.status === "paid") {
+            const isThisMonth = (bData.month === currentMonthPrefix) || 
+              (bData.paymentDate && bData.paymentDate.startsWith(currentMonthPrefix)) ||
+              (bData.paidAt && bData.paidAt.startsWith(currentMonthPrefix));
+            if (isThisMonth) {
+              revenueThisMonth += amount;
+            }
+          } else if (bData.status === "overdue") {
+            overdueAmount += amount;
+            overdueCount++;
+          } else if (bData.status === "pending" && bData.dueDate && new Date(bData.dueDate) < now) {
+            overdueAmount += amount;
+            overdueCount++;
+          }
+        });
+
+        // 3. การแจ้งซ่อมที่รอดำเนินการ
+        const repairsCol = collection(db, "repairs");
+        const repairsDocs = await getDocs(query(repairsCol, orderBy("createdAt", "desc")));
+        const pendingRepairs = repairsDocs.docs.filter(d => d.data().status !== "สำเร็จ").length;
+
+        setStats([
+          { 
+            name: "อัตราการเข้าพัก", 
+            value: `${occupancyRate}%`, 
+            change: `${occupiedRooms}/${totalRooms} ห้อง`, 
+            changeType: occupancyRate >= 80 ? "positive" : "neutral", 
+            icon: "room" 
+          },
+          { 
+            name: "ยอดค้างชำระ", 
+            value: `฿${overdueAmount.toLocaleString()}`, 
+            change: `${overdueCount} บิล`, 
+            changeType: overdueAmount > 0 ? "negative" : "positive", 
+            icon: "money" 
+          },
+          { 
+            name: "รายรับเดือนนี้", 
+            value: `฿${revenueThisMonth.toLocaleString()}`, 
+            change: currentMonthPrefix, 
+            changeType: "positive", 
+            icon: "revenue" 
+          },
+          { 
+            name: "คิวงานซ่อม", 
+            value: `${pendingRepairs} งาน`, 
+            change: `รอดำเนินการ`, 
+            changeType: pendingRepairs > 0 ? "neutral" : "positive", 
+            icon: "wrench" 
+          },
+        ]);
+
         // ดึงข้อมูลการแจ้งซ่อมล่าสุด
-        const repairsQuery = query(repairsCol, orderBy("createdAt", "desc"));
-        const repairsDocs = await getDocs(repairsQuery);
         const repairsList: RepairItem[] = [];
         
         repairsDocs.forEach(doc => {

@@ -17,6 +17,7 @@ interface Tenant {
   roomId: string;
   moveOutRequested?: boolean;
   expectedMoveOutDate?: any;
+  email?: string;
 }
 
 export default function ManageTenantsPage() {
@@ -25,6 +26,36 @@ export default function ManageTenantsPage() {
   const [loading, setLoading] = useState(true);
   const [confirmMoveOut, setConfirmMoveOut] = useState<Tenant | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Tenant Details & Bill History modal
+  const [selectedTenantForBills, setSelectedTenantForBills] = useState<Tenant | null>(null);
+  const [tenantBills, setTenantBills] = useState<any[]>([]);
+  const [loadingBills, setLoadingBills] = useState(false);
+  const [previewSlipUrl, setPreviewSlipUrl] = useState<string | null>(null);
+
+  const handleOpenBills = async (tenant: Tenant) => {
+    setSelectedTenantForBills(tenant);
+    setLoadingBills(true);
+    try {
+      const q = query(
+        collection(db, "bills"),
+        where("tenantId", "==", tenant.tenantId)
+      );
+      const snap = await getDocs(q);
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a: any, b: any) => {
+        const dateA = a.dueDate || a.month || "";
+        const dateB = b.dueDate || b.month || "";
+        return dateB.localeCompare(dateA);
+      });
+      setTenantBills(list);
+    } catch (err) {
+      console.error("Error loading bills:", err);
+      toast.error("ไม่สามารถดึงประวัติบิลได้");
+    } finally {
+      setLoadingBills(false);
+    }
+  };
 
   useEffect(() => {
     const fetchTenants = async () => {
@@ -78,7 +109,8 @@ export default function ManageTenantsPage() {
                 tenantId: roomData.tenantId,
                 roomId: roomData.id,
                 moveOutRequested: uData.moveOutRequested,
-                expectedMoveOutDate: uData.expectedMoveOutDate
+                expectedMoveOutDate: uData.expectedMoveOutDate,
+                email: uData.email || "-"
               });
             }
           }
@@ -121,39 +153,30 @@ export default function ManageTenantsPage() {
       if (tenant.tenantId) {
         const uid = tenant.tenantId;
 
-        // 2. ดึงข้อมูลผู้ใช้สำหรับเก็บไว้ reset
-        const userSnap = await getDocs(query(collection(db, "users"), where("__name__", "==", uid)));
-        const userData = userSnap.docs[0]?.data();
-
-        // 3. ลบ bills
+        // 2. Archive bills (เก็บประวัติการเงินไว้สำหรับรายงาน ไม่ลบถาวร)
         const billsSnap = await getDocs(query(collection(db, "bills"), where("tenantId", "==", uid)));
-        for (const d of billsSnap.docs) await deleteDoc(d.ref);
+        if (!billsSnap.empty) {
+          const batch = writeBatch(db);
+          billsSnap.docs.forEach((d) => {
+            batch.update(d.ref, {
+              isArchived: true,
+              archivedAt: new Date().toISOString(),
+              pastRoom: tenant.room
+            });
+          });
+          await batch.commit();
+        }
 
-        // 4. ลบ repairs
-        const repairsSnap = await getDocs(query(collection(db, "repairs"), where("tenantId", "==", uid)));
-        for (const d of repairsSnap.docs) await deleteDoc(d.ref);
-
-        // 5. ลบ room_requests
-        const reqSnap = await getDocs(query(collection(db, "room_requests"), where("tenantId", "==", uid)));
-        for (const d of reqSnap.docs) await deleteDoc(d.ref);
-
-        // 6. ลบ chats + messages
-        const msgsSnap = await getDocs(collection(db, "chats", uid, "messages"));
-        for (const d of msgsSnap.docs) await deleteDoc(d.ref);
-        try { await deleteDoc(doc(db, "chats", uid)); } catch {}
-
-        // 7. รีเซ็ต users document ให้เหมือนสมัครใหม่
-        await setDoc(doc(db, "users", uid), {
-          uid,
-          name: userData?.name || "",
-          email: userData?.email || "",
-          phone: userData?.phone || "",
-          role: "tenant",
-          createdAt: userData?.createdAt || new Date().toISOString(),
+        // 3. ปรับสถานะผู้เช่าเป็น moved_out พร้อมบันทึกประวัติห้องเดิม
+        await updateDoc(doc(db, "users", uid), {
+          tenantStatus: "moved_out",
+          pastRoom: tenant.room,
+          movedOutAt: new Date().toISOString(),
+          moveOutRequested: false,
         });
       }
 
-      toast.success("ย้ายออกสำเร็จ ลบข้อมูลทั้งหมดเรียบร้อยแล้ว");
+      toast.success("บันทึกการย้ายออกและเก็บประวัติเรียบร้อยแล้ว");
       setTenants(prev => prev.filter(t => t.id !== tenant.id));
     } catch (error) {
       console.error("เกิดข้อผิดพลาดในการย้ายออก:", error);
@@ -171,8 +194,8 @@ export default function ManageTenantsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in-95 duration-200">
             <div className="flex flex-col items-center text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600">
+              <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600">
                   <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
               </div>
@@ -182,20 +205,19 @@ export default function ManageTenantsPage() {
                   {confirmMoveOut.name} · ห้อง {confirmMoveOut.room}
                 </p>
               </div>
-              <div className="w-full bg-red-50 border border-red-200 rounded-2xl p-4 text-left space-y-2">
-                <p className="text-red-700 font-bold text-sm flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                  ระบบจะลบข้อมูลทั้งหมดทันที
+              <div className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left space-y-2">
+                <p className="text-amber-800 font-bold text-sm flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/></svg>
+                  การดำเนินการย้ายออก
                 </p>
-                <ul className="text-red-600 text-xs space-y-1 ml-6 list-disc">
-                  <li>บิลค่าเช่าและประวัติการชำระเงินทั้งหมด</li>
-                  <li>ประวัติแจ้งซ่อมทั้งหมด</li>
-                  <li>ประวัติการจองห้องทั้งหมด</li>
-                  <li>ข้อความแชททั้งหมด</li>
-                  <li>บัญชีจะถูก reset เหมือนสมัครใหม่</li>
+                <ul className="text-amber-700 text-xs space-y-1 ml-6 list-disc">
+                  <li>ห้องพักจะเปลี่ยนสถานะเป็น "ว่าง" พร้อมเปิดให้จองใหม่</li>
+                  <li>ประวัติผู้เช่าจะถูกบันทึกย้ายไปยังหน้า "ประวัติผู้เช่า"</li>
+                  <li>ประวัติบิลค่าเช่าทั้งหมดจะถูกจัดเก็บเข้าคลังข้อมูล (ไม่สูญหาย)</li>
+                  <li>สถานะบัญชีผู้เช่าจะถูกปรับเป็น "ย้ายออกแล้ว"</li>
                 </ul>
               </div>
-              <p className="text-slate-400 text-xs">การกระทำนี้ไม่สามารถยกเลิกได้</p>
+              <p className="text-slate-400 text-xs">คุณสามารถตรวจสอบประวัติย้อนหลังได้ตลอดเวลา</p>
               <div className="flex gap-3 w-full">
                 <button
                   onClick={() => setConfirmMoveOut(null)}
@@ -211,6 +233,184 @@ export default function ManageTenantsPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Modal รายละเอียดผู้เช่า & ประวัติบิล ===== */}
+      {selectedTenantForBills && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="glass-panel bg-white/95 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="p-6 border-b border-[var(--glass-border)] flex items-center justify-between bg-white/50">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[var(--accent-light)]/60 text-[var(--accent-dark)] font-extrabold text-lg flex items-center justify-center border border-[var(--accent-brown)]/20 shadow-sm">
+                  {selectedTenantForBills.room}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[var(--text-main)]">{selectedTenantForBills.name}</h2>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)] mt-1">
+                    <span>📞 {selectedTenantForBills.contact}</span>
+                    <span>✉️ {selectedTenantForBills.email}</span>
+                    <span>📅 เข้าพัก: {selectedTenantForBills.moveInDate}</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedTenantForBills(null)}
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              {/* Financial Quick Summary */}
+              {(() => {
+                const totalPaid = tenantBills
+                  .filter(b => b.status === "paid")
+                  .reduce((sum, b) => sum + (Number(b.totalAmount) || 0), 0);
+                const totalUnpaid = tenantBills
+                  .filter(b => b.status === "pending" || b.status === "overdue")
+                  .reduce((sum, b) => sum + (Number(b.totalAmount) || 0), 0);
+                return (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                      <p className="text-xs font-semibold text-slate-500">จำนวนบิลทั้งหมด</p>
+                      <p className="text-lg font-bold text-slate-800 mt-0.5">{tenantBills.length} บิล</p>
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200">
+                      <p className="text-xs font-semibold text-emerald-600">ยอดชำระแล้ว</p>
+                      <p className="text-lg font-bold text-emerald-700 mt-0.5">฿{totalPaid.toLocaleString()}</p>
+                    </div>
+                    <div className={`p-3.5 rounded-2xl border ${totalUnpaid > 0 ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
+                      <p className={`text-xs font-semibold ${totalUnpaid > 0 ? 'text-amber-600' : 'text-slate-500'}`}>ยอดค้างชำระ</p>
+                      <p className={`text-lg font-bold mt-0.5 ${totalUnpaid > 0 ? 'text-amber-700' : 'text-slate-800'}`}>฿{totalUnpaid.toLocaleString()}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Bills Table */}
+              <div>
+                <h3 className="text-sm font-bold text-[var(--text-main)] mb-3">ประวัติบิลค่าเช่า</h3>
+                {loadingBills ? (
+                  <div className="flex items-center justify-center py-12 text-slate-400 gap-2">
+                    <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                    <span>กำลังโหลดบิล...</span>
+                  </div>
+                ) : tenantBills.length === 0 ? (
+                  <div className="text-center py-10 text-slate-400 border border-dashed rounded-2xl">
+                    <p className="font-semibold text-sm">ยังไม่มีประวัติบิลสำหรับผู้เช่านี้</p>
+                  </div>
+                ) : (
+                  <div className="border border-[var(--glass-border)] rounded-2xl overflow-hidden">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-slate-50 text-slate-500 font-bold uppercase border-b border-[var(--glass-border)]">
+                        <tr>
+                          <th className="px-4 py-3">รอบเดือน</th>
+                          <th className="px-4 py-3">กำหนดชำระ</th>
+                          <th className="px-4 py-3 text-right">ยอดรวม (บาท)</th>
+                          <th className="px-4 py-3 text-center">สถานะ</th>
+                          <th className="px-4 py-3">วิธีชำระ</th>
+                          <th className="px-4 py-3 text-center">สลิป</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--glass-border)]">
+                        {tenantBills.map((bill) => (
+                          <tr key={bill.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="px-4 py-3 font-bold text-slate-800">{bill.month || "-"}</td>
+                            <td className="px-4 py-3 text-slate-500">{bill.dueDate || "-"}</td>
+                            <td className="px-4 py-3 text-right font-bold text-slate-800">
+                              {(Number(bill.totalAmount) || 0).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] ${
+                                bill.status === "paid" ? "bg-emerald-100 text-emerald-700" :
+                                bill.status === "overdue" ? "bg-rose-100 text-rose-700" :
+                                "bg-amber-100 text-amber-700"
+                              }`}>
+                                {bill.status === "paid" ? "ชำระแล้ว" : bill.status === "overdue" ? "ค้างชำระ" : "รอชำระ"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">
+                              {bill.paymentMethod === "cash" ? "เงินสด" : bill.paymentMethod === "transfer" ? (
+                                <span className="flex flex-col">
+                                  <span>โอนเงิน</span>
+                                  {bill.transRef && <span className="text-[10px] text-slate-400 font-mono">Ref: {bill.transRef}</span>}
+                                </span>
+                              ) : "-"}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {bill.slipUrl ? (
+                                <button
+                                  onClick={() => setPreviewSlipUrl(bill.slipUrl)}
+                                  className="text-[11px] font-bold text-[var(--accent-brown)] underline hover:text-[var(--accent-dark)]"
+                                >
+                                  ดูสลิป
+                                </button>
+                              ) : (
+                                <span className="text-slate-300">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-[var(--glass-border)] bg-slate-50/50 flex justify-end">
+              <button
+                onClick={() => setSelectedTenantForBills(null)}
+                className="px-5 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900 transition-colors"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Slip Lightbox Modal ===== */}
+      {previewSlipUrl && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewSlipUrl(null)}
+        >
+          <div 
+            className="relative max-w-lg w-full bg-white rounded-3xl overflow-hidden shadow-2xl p-4 flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between w-full border-b pb-3">
+              <h3 className="font-bold text-slate-800 text-sm">หลักฐานการโอนเงิน</h3>
+              <button 
+                onClick={() => setPreviewSlipUrl(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="w-full max-h-[70vh] overflow-auto rounded-xl flex items-center justify-center bg-slate-50 p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={previewSlipUrl} 
+                alt="สลิปการโอนเงิน" 
+                className="max-h-[65vh] w-auto object-contain rounded-lg shadow-md"
+              />
+            </div>
+            <a 
+              href={previewSlipUrl} 
+              target="_blank" 
+              rel="noreferrer"
+              className="text-xs font-bold text-slate-600 hover:text-slate-900 underline flex items-center gap-1"
+            >
+              เปิดรูปขนาดเต็มในแท็บใหม่ ↗
+            </a>
           </div>
         </div>
       )}
@@ -347,6 +547,14 @@ export default function ManageTenantsPage() {
                     </td>
                     <td className="flex justify-end gap-2 md:table-cell px-2 py-3 md:px-6 md:py-4 text-right mt-2 md:mt-0">
                        <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-70 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleOpenBills(tenant)}
+                            className="px-3 py-1.5 text-xs font-bold border border-[var(--glass-border)] rounded-lg text-slate-700 bg-white/70 hover:bg-white transition-all shadow-sm flex items-center gap-1.5"
+                            title="ดูรายละเอียดและประวัติบิล"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent-brown)]"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            ประวัติบิล
+                          </button>
                           <button 
                             onClick={() => handleMoveOut(tenant)}
                             className={`px-3 py-1.5 text-xs font-bold border rounded-lg transition-all shadow-sm flex items-center gap-1.5 ${

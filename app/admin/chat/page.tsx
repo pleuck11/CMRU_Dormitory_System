@@ -15,7 +15,7 @@ interface Message {
   text: string;
   senderId: string;
   senderName: string;
-  senderRole: "tenant" | "admin";
+  senderRole: "tenant" | "admin" | "system";
   createdAt: Timestamp | null;
   type?: string;
   moveInDate?: string;
@@ -667,6 +667,23 @@ export default function AdminChatPage() {
                                 <span className="text-[10px] text-[var(--text-muted)] italic">ตอบกลับแล้ว</span>
                               </div>
                             )}
+                          </div>
+                        );
+                      }
+
+                      // ===== ข้อความแจ้งเตือนจากระบบ (System Message) =====
+                      if (msg.type === "system" || msg.senderRole === "system" || msg.senderId === "system") {
+                        return (
+                          <div
+                            key={msg.id}
+                            ref={(el) => { if (el) messageRefs.current.set(msg.id, el); }}
+                            className="flex justify-center my-3"
+                          >
+                            <div className="bg-slate-100/90 backdrop-blur-sm border border-slate-200 text-slate-700 rounded-full px-4 py-1.5 text-xs flex items-center gap-2 shadow-sm max-w-md text-center">
+                              <span className="text-sm">🔔</span>
+                              <span>{msg.text}</span>
+                              <span className="text-[10px] text-slate-400">{formatTime(msg.createdAt)}</span>
+                            </div>
                           </div>
                         );
                       }

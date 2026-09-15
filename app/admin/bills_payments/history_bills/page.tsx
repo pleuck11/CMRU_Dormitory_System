@@ -12,14 +12,14 @@ interface PaymentRecord {
   amount: number;
   paidAt: string; // วันที่ชำระ
   method: "cash" | "transfer" | "promptpay";
+  slipUrl?: string;
+  transRef?: string;
+  paymentBank?: string;
   note?: string;
 }
 
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
-// ข้อมูลตัวอย่าง (เชื่อมต่อ Firestore แล้ว — ไม่ใช้งานแล้ว)
-// const mockPayments: PaymentRecord[] = [];
 
 const methodLabel: Record<PaymentRecord["method"], string> = {
   cash: "เงินสด",
@@ -38,6 +38,7 @@ export default function PaymentHistoryPage() {
   const [filterMonth, setFilterMonth] = useState("");
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewSlipUrl, setPreviewSlipUrl] = useState<string | null>(null);
 
   // โหลดข้อมูลล่าสุดจาก Firebase
   useEffect(() => {
@@ -68,8 +69,11 @@ export default function PaymentHistoryPage() {
               room: data.roomNumber || "-",
               building: data.building || "-",
               amount: data.totalAmount || 0,
-              paidAt: data.paymentDate || data.updatedAt || data.createdAt?.split("T")[0] || "-",
+              paidAt: data.paymentDate || data.paidAt?.split("T")[0] || data.updatedAt?.split("T")[0] || data.createdAt?.split("T")[0] || "-",
               method: data.paymentMethod || "transfer",
+              slipUrl: data.slipUrl || undefined,
+              transRef: data.transRef || undefined,
+              paymentBank: data.paymentBank || undefined,
               note: data.note || "",
             });
           }
@@ -247,13 +251,14 @@ export default function PaymentHistoryPage() {
                 <th className="px-6 py-4 font-semibold whitespace-nowrap">ยอดชำระ</th>
                 <th className="px-6 py-4 font-semibold whitespace-nowrap">วันที่ชำระ</th>
                 <th className="px-6 py-4 font-semibold whitespace-nowrap">ช่องทาง</th>
+                <th className="px-6 py-4 font-semibold whitespace-nowrap">หลักฐาน</th>
                 <th className="px-6 py-4 font-semibold whitespace-nowrap">หมายเหตุ</th>
               </tr>
             </thead>
             <tbody className="block md:table-row-group">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center text-[var(--text-muted)] font-medium text-lg">
+                  <td colSpan={9} className="px-6 py-16 text-center text-[var(--text-muted)] font-medium text-lg">
                     <div className="flex flex-col items-center justify-center space-y-3">
                       <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="opacity-30">
                         <circle cx="12" cy="12" r="10" />
@@ -290,7 +295,12 @@ export default function PaymentHistoryPage() {
                     </td>
                     <td className="flex justify-between md:table-cell items-center px-2 py-3 md:px-6 md:py-4 font-bold text-emerald-700 text-base border-b border-[var(--glass-border)] md:border-0 mt-2 md:mt-0">
                       <span className="md:hidden font-semibold text-xs text-[var(--text-muted)] uppercase">ยอดชำระ</span>
-                      ฿{p.amount.toLocaleString()}
+                      <div>
+                        ฿{p.amount.toLocaleString()}
+                        {p.transRef && (
+                          <p className="text-[10px] text-slate-400 font-normal">Ref: {p.transRef}</p>
+                        )}
+                      </div>
                     </td>
                     <td className="flex justify-between md:table-cell items-center px-2 py-3 md:px-6 md:py-4 text-[var(--text-muted)] font-medium whitespace-nowrap border-b border-[var(--glass-border)] md:border-0">
                       <span className="md:hidden font-semibold text-xs text-[var(--text-muted)] uppercase">วันที่ชำระ</span>
@@ -301,6 +311,25 @@ export default function PaymentHistoryPage() {
                       <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${methodColor[p.method]}`}>
                         {methodLabel[p.method]}
                       </span>
+                    </td>
+                    <td className="flex justify-between md:table-cell items-center px-2 py-3 md:px-6 md:py-4 border-b border-[var(--glass-border)] md:border-0">
+                      <span className="md:hidden font-semibold text-xs text-[var(--text-muted)] uppercase">หลักฐาน</span>
+                      {p.slipUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewSlipUrl(p.slipUrl!)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 transition-all shadow-sm"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                            <circle cx="9" cy="9" r="2"/>
+                            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                          </svg>
+                          ดูสลิป
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
                     </td>
                     <td className="flex justify-between md:table-cell items-center px-2 py-3 md:px-6 md:py-4 text-[var(--text-muted)] font-medium border-b border-[var(--glass-border)] md:border-0">
                       <span className="md:hidden font-semibold text-xs text-[var(--text-muted)] uppercase">หมายเหตุ</span>
@@ -331,6 +360,43 @@ export default function PaymentHistoryPage() {
           </div>
         </div>
       </div>
+
+      {/* Lightbox ดูรูปสลิป */}
+      {previewSlipUrl && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+          onClick={() => setPreviewSlipUrl(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-4 max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col space-y-3 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-2 pt-1 border-b border-slate-100 pb-2">
+              <h3 className="font-bold text-base text-[var(--text-main)]">หลักฐานการชำระเงิน</h3>
+              <button
+                type="button"
+                onClick={() => setPreviewSlipUrl(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-all"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto flex items-center justify-center p-2 bg-slate-50 rounded-2xl">
+              <img src={previewSlipUrl} alt="Payment Slip" className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-sm" />
+            </div>
+            <div className="flex justify-end pt-1">
+              <a
+                href={previewSlipUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 underline px-3 py-1"
+              >
+                เปิดรูปภาพในแท็บใหม่ ↗
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

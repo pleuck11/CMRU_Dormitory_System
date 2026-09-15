@@ -122,10 +122,9 @@ export default function TenantLayout({
   };
 
 
-  // ปิดการตรวจสอบการยืนยันอีเมลชั่วคราว (ผู้ใช้ login แล้วเข้าได้เลย)
-  // if (!loading && user && !emailVerified) {
-  //   return <EmailVerificationWall />;
-  // }
+  if (!loading && user && !emailVerified && role !== "admin") {
+    return <EmailVerificationWall />;
+  }
 
   if (loading) {
     return (

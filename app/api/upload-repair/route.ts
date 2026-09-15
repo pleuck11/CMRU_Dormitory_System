@@ -1,7 +1,16 @@
 import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuthToken } from "@/lib/server-auth";
 
 export async function POST(request: NextRequest) {
+  const user = await verifyAuthToken(request);
+  if (!user) {
+    return NextResponse.json(
+      { error: "Unauthorized: กรุณาเข้าสู่ระบบก่อนทำรายการ" },
+      { status: 401 }
+    );
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;

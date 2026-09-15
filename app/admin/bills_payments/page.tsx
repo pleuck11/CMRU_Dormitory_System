@@ -83,6 +83,12 @@ export default function BillsPaymentsPage() {
   const [isSavingBank, setIsSavingBank] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ============ รับชำระเงิน (Mark as Paid) ============
+  const [payingBill, setPayingBill] = useState<Bill | null>(null);
+  const [payMethod, setPayMethod] = useState<"cash" | "transfer">("cash");
+  const [payNote, setPayNote] = useState("");
+  const [isSubmittingPay, setIsSubmittingPay] = useState(false);
+
   // คำนวณยอดรวมทั้งหมดอัตโนมัติ
   const totalAmount =
     (Number(billAmount) || 0) +
@@ -309,6 +315,30 @@ export default function BillsPaymentsPage() {
     } catch (error) {
       console.error("Error cancelling bill:", error);
       toast.error("เกิดข้อผิดพลาดในการยกเลิกบิล");
+    }
+  };
+
+  const handleConfirmMarkAsPaid = async () => {
+    if (!payingBill) return;
+    setIsSubmittingPay(true);
+    try {
+      await updateDoc(doc(db, "bills", payingBill.id), {
+        status: "paid",
+        paidAt: new Date().toISOString(),
+        paymentDate: new Date().toISOString().split("T")[0],
+        paymentMethod: payMethod,
+        paidByAdmin: true,
+        note: payNote.trim() || (payMethod === "cash" ? "ชำระเงินสดกับผู้ดูแล" : "โอนเงิน (ยืนยันโดยแอดมิน)"),
+      });
+      toast.success("บันทึกการรับชำระเงินสำเร็จ");
+      setPayingBill(null);
+      setPayNote("");
+      fetchBills();
+    } catch (error) {
+      console.error("Error marking bill as paid:", error);
+      toast.error("เกิดข้อผิดพลาดในการบันทึกการรับชำระเงิน");
+    } finally {
+      setIsSubmittingPay(false);
     }
   };
 
@@ -758,6 +788,21 @@ export default function BillsPaymentsPage() {
                             </svg>
                           </button>
                         )}
+                        {(bill.status === 'pending' || bill.status === 'overdue') && (
+                          <button
+                            onClick={() => {
+                              setPayingBill(bill);
+                              setPayMethod("cash");
+                              setPayNote("");
+                            }}
+                            className="p-2.5 text-[var(--text-muted)] hover:text-emerald-600 hover:bg-emerald-50/80 border border-transparent hover:border-emerald-200 rounded-lg transition-all shadow-sm hover:shadow-md inline-flex items-center justify-center backdrop-blur-sm"
+                            title="รับชำระเงินสด / โอนเงิน (Mark as Paid)"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                          </button>
+                        )}
                         {bill.status === 'pending' && (
                           <button
                             onClick={() => handleCancelBill(bill.id)}
@@ -1201,6 +1246,120 @@ export default function BillsPaymentsPage() {
               <button onClick={() => window.print()} className="px-5 py-2.5 bg-[#8B5E3C] hover:bg-[#734A2E] text-white rounded-xl font-bold flex items-center gap-2 transition-colors shadow-sm text-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
                 พิมพ์ใบนี้
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* โมดอลรับชำระเงิน (Mark as Paid) */}
+      {payingBill && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white/95 backdrop-blur-2xl border border-white/80 shadow-2xl w-[95%] max-w-md rounded-3xl p-6 space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-[var(--text-main)]">
+                  รับชำระเงินบิลค่าห้อง
+                </h3>
+                <p className="text-xs text-[var(--text-muted)]">
+                  ห้อง {payingBill.roomNumber} ({payingBill.tenantName || "ผู้เช่า"})
+                </p>
+              </div>
+              <button
+                onClick={() => setPayingBill(null)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-all text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* ข้อมูลบิล */}
+            <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>รอบบิล:</span>
+                <span className="font-semibold text-slate-900">{payingBill.month}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>กำหนดชำระ:</span>
+                <span className="font-semibold text-slate-900">{payingBill.dueDate}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-amber-200/40 text-sm">
+                <span className="font-bold text-amber-950">ยอดที่ต้องชำระ:</span>
+                <span className="font-extrabold text-lg text-[var(--accent-brown)]">
+                  ฿{payingBill.totalAmount.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* ช่องทางการชำระเงิน */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 block">
+                ช่องทางการชำระเงิน:
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPayMethod("cash")}
+                  className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                    payMethod === "cash"
+                      ? "bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm"
+                      : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <span>💵</span> เงินสด
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPayMethod("transfer")}
+                  className={`p-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                    payMethod === "transfer"
+                      ? "bg-blue-50 border-blue-500 text-blue-800 shadow-sm"
+                      : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <span>📱</span> โอนเงินผ่านธนาคาร
+                </button>
+              </div>
+            </div>
+
+            {/* หมายเหตุเพิ่มเติม */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700 block">
+                หมายเหตุ (ถ้ามี):
+              </label>
+              <input
+                type="text"
+                value={payNote}
+                onChange={(e) => setPayNote(e.target.value)}
+                placeholder="เช่น ผู้เช่าจ่ายเงินสดที่สำนักงาน"
+                className="glass-input w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200"
+              />
+            </div>
+
+            {/* ปุ่มกดยืนยัน */}
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setPayingBill(null)}
+                disabled={isSubmittingPay}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmMarkAsPaid}
+                disabled={isSubmittingPay}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSubmittingPay ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    กำลังบันทึก...
+                  </>
+                ) : (
+                  "ยืนยันการรับชำระเงิน"
+                )}
               </button>
             </div>
           </div>

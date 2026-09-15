@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { collection, query, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 
 interface Room {
   id: string;
@@ -170,8 +170,10 @@ export default function RoomsPage() {
         const uploadData = new FormData();
         uploadData.append("file", imageFile);
 
+        const token = await auth.currentUser?.getIdToken();
         const uploadRes = await fetch("/api/upload-room-image", {
           method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: uploadData,
         });
 
@@ -222,8 +224,10 @@ export default function RoomsPage() {
         const uploadData = new FormData();
         uploadData.append("file", imageFile);
 
+        const token = await auth.currentUser?.getIdToken();
         const uploadRes = await fetch("/api/upload-room-image", {
           method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: uploadData,
         });
 
@@ -332,8 +336,10 @@ export default function RoomsPage() {
         const uploadData = new FormData();
         uploadData.append("file", imageFile);
 
+        const token = await auth.currentUser?.getIdToken();
         const uploadRes = await fetch("/api/upload-room-image", {
           method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: uploadData,
         });
 

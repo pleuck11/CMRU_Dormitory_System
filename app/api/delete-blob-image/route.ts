@@ -1,7 +1,16 @@
 import { del } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminToken } from "@/lib/server-auth";
 
 export async function POST(request: NextRequest) {
+  const admin = await verifyAdminToken(request);
+  if (!admin) {
+    return NextResponse.json(
+      { error: "Unauthorized: คุณไม่มีสิทธิ์ในการลบรูปภาพนี้" },
+      { status: 403 }
+    );
+  }
+
   try {
     const { url } = await request.json();
 

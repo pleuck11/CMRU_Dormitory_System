@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "@/lib/toast";
 
@@ -43,6 +43,8 @@ interface RoomRequest {
   requireDeposit?: boolean;
   slipUrl?: string;
   idCardUrl?: string;
+  moveInDate?: string;
+  cancelReason?: string;
 }
 
 interface BankAccount {
@@ -70,7 +72,10 @@ export default function TenantDashboard() {
   const [mounted, setMounted] = useState(false);
   const [roomRequest, setRoomRequest] = useState<RoomRequest | null>(null);
   const [idCardFile, setIdCardFile] = useState<File | null>(null);
+  const [slipFile, setSlipFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isVerifyingSlip, setIsVerifyingSlip] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   const [room, setRoom] = useState<Room | null>(null);
   const [bill, setBill] = useState<Bill | null>(null);
@@ -209,8 +214,10 @@ export default function TenantDashboard() {
     
     setUploading(true);
     try {
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch(`/api/upload-blob?filename=booking_docs/${roomRequest.id}/idcard_${Date.now()}_${idCardFile.name}`, {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: idCardFile,
       });
 
@@ -226,13 +233,61 @@ export default function TenantDashboard() {
         status: newStatus
       });
 
-      setRoomRequest({ ...roomRequest, idCardUrl, status: newStatus });
+      setRoomRequest((prev) => prev ? { ...prev, idCardUrl, status: newStatus } : null);
+      setIdCardFile(null);
       toast.success("อัปโหลดเอกสารสำเร็จ");
     } catch (error) {
       console.error("Upload error", error);
       toast.error("เกิดข้อผิดพลาดในการอัปโหลดไฟล์");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleUploadDepositSlip = async () => {
+    if (!roomRequest || !slipFile || !user) {
+      toast.warning("กรุณาเลือกไฟล์สลิปการโอนเงินมัดจำ");
+      return;
+    }
+
+    setIsVerifyingSlip(true);
+    try {
+      const formData = new FormData();
+      formData.append("slip", slipFile);
+      formData.append("billId", roomRequest.id);
+      formData.append("type", "deposit");
+
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/verify-slip", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.message || "เกิดข้อผิดพลาดในการตรวจสอบสลิป");
+        return;
+      }
+
+      if (data.success) {
+        toast.success("ตรวจสอบสลิปมัดจำสำเร็จแล้ว! ✨");
+        const newSlipUrl = data.slipUrl;
+        const newStatus = roomRequest.idCardUrl ? "pending_approval" : roomRequest.status;
+        setRoomRequest((prev) => prev ? {
+          ...prev,
+          slipUrl: newSlipUrl,
+          status: newStatus
+        } : null);
+        setSlipFile(null);
+      } else {
+        toast.error(data.message || "สลิปไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่อีกครั้ง");
+      }
+    } catch (error) {
+      console.error("Error verifying deposit slip:", error);
+      toast.error("เกิดข้อผิดพลาดในการตรวจสอบสลิป");
+    } finally {
+      setIsVerifyingSlip(false);
     }
   };
 
@@ -299,18 +354,283 @@ export default function TenantDashboard() {
       {/* สถานะการจองห้องพัก (ถ้ามี) */}
       {roomRequest && (
         <div className="glass-panel p-6 md:p-8 rounded-3xl mb-8 border-2 border-amber-200/50 bg-amber-50/50 relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-           <div className="relative z-10">
-             <div className="flex items-start gap-4 mb-6">
-                <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 shadow-sm shrink-0">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none"></div>
+          <div className="relative z-10 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-700 shadow-sm shrink-0">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                 </div>
                 <div>
-                   <h2 className="text-xl font-bold text-amber-900 mb-1">สถานะการจองห้องพัก</h2>
-                   <p className="text-amber-700/80 text-sm font-medium">ห้อง {roomRequest.building}{roomRequest.roomNumber}</p>
+                  <h2 className="text-xl font-bold text-amber-950">สถานะการจองห้องพัก</h2>
+                  <p className="text-amber-800/90 text-sm font-medium">ห้องพัก: ตึก {roomRequest.building} ห้อง {roomRequest.roomNumber}</p>
                 </div>
-             </div>
-           </div>
+              </div>
+
+              {/* Status Badge */}
+              <div>
+                {roomRequest.status === "approved" && (
+                  <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    อนุมัติแล้ว 🎉
+                  </span>
+                )}
+                {roomRequest.status === "pending_approval" && (
+                  <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    รอแอดมินอนุมัติห้องพัก
+                  </span>
+                )}
+                {(roomRequest.status === "pending" || roomRequest.status === "pending_docs") && (
+                  <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    รอดำเนินการเอกสาร / ชำระมัดจำ
+                  </span>
+                )}
+                {(roomRequest.status === "cancelled" || roomRequest.status === "rejected") && (
+                  <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-300">
+                    คำขอถูกยกเลิก
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Approved State */}
+            {roomRequest.status === "approved" && (
+              <div className="bg-white/80 backdrop-blur-sm border border-emerald-200 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="font-bold text-emerald-900 text-base">คำขอจองห้องได้รับการอนุมัติแล้ว</p>
+                  <p className="text-xs text-emerald-700">
+                    {roomRequest.moveInDate ? `วันเข้าอยู่ที่กำหนด: ${roomRequest.moveInDate}` : "ยินดีต้อนรับสู่ Yayee Dormitory! คุณสามารถติดต่อผู้ดูแลหอพักผ่านทางกล่องข้อความได้"}
+                  </p>
+                </div>
+                <Link
+                  href="/tenant/chat"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0"
+                >
+                  เปิดแชทผู้ดูแลหอพัก
+                </Link>
+              </div>
+            )}
+
+            {/* Pending Approval State */}
+            {roomRequest.status === "pending_approval" && (
+              <div className="bg-white/80 backdrop-blur-sm border border-blue-200 p-5 rounded-2xl space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">✓</div>
+                  <div>
+                    <p className="font-bold text-blue-950 text-sm">อัปโหลดเอกสารครบถ้วนเรียบร้อยแล้ว</p>
+                    <p className="text-xs text-blue-700">ขณะนี้แอดมินกำลังตรวจสอบความถูกต้องของสลิปและสำเนาบัตรประชาชน เมื่อได้รับการอนุมัติระบบจะแจ้งเตือนให้ทราบทันที</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-3 pt-2 border-t border-blue-100 text-xs">
+                  {roomRequest.slipUrl && (
+                    <a href={roomRequest.slipUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-900 underline font-semibold flex items-center gap-1">
+                      📄 ดูสลิปมัดจำที่แนบ
+                    </a>
+                  )}
+                  {roomRequest.idCardUrl && (
+                    <a href={roomRequest.idCardUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-900 underline font-semibold flex items-center gap-1">
+                      🪪 ดูสำเนาบัตรประชาชนที่แนบ
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Pending Docs State (Deposit & ID Card Upload) */}
+            {(roomRequest.status === "pending" || roomRequest.status === "pending_docs") && (
+              <div className="space-y-4">
+                <p className="text-xs font-medium text-amber-900/90">
+                  กรุณาดำเนินการแนบหลักฐานการชำระเงินมัดจำและสำเนาบัตรประชาชนเพื่อยืนยันสิทธิ์การจองห้องพัก
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* กล่องที่ 1: เงินมัดจำ */}
+                  <div className="bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-amber-200/80 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-bold text-sm text-[var(--text-main)]">1. ชำระเงินมัดจำ</h3>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          ยอดที่ต้องชำระ: <span className="font-bold text-amber-700 text-sm">฿{(roomRequest.depositFee || roomRequest.rentPrice || 0).toLocaleString()}</span>
+                        </p>
+                      </div>
+                      {roomRequest.slipUrl ? (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          ชำระแล้ว ✓
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          รอชำระ
+                        </span>
+                      )}
+                    </div>
+
+                    {roomRequest.slipUrl ? (
+                      <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-3 text-xs text-emerald-800 flex items-center justify-between">
+                        <span>บันทึกสลิปมัดจำแล้ว</span>
+                        <a href={roomRequest.slipUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline text-emerald-700 hover:text-emerald-900">
+                          ดูสลิป
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 pt-1">
+                        {bankAccount && (
+                          <div className="bg-amber-50/60 p-2.5 rounded-xl text-xs text-amber-900 border border-amber-200/60 flex items-center justify-between">
+                            <div>
+                              <span className="text-[var(--text-muted)]">พร้อมเพย์: </span>
+                              <span className="font-bold">{bankAccount.promptPayNumber || "-"}</span>
+                            </div>
+                            {bankAccount.qrImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setShowQRModal(true)}
+                                className="text-[11px] font-bold text-amber-700 hover:text-amber-900 underline"
+                              >
+                                ดู QR Code
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[var(--text-main)] mb-1">
+                            แนบสลิปโอนเงิน (ระบบตรวจจับ QR อัตโนมัติ):
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isVerifyingSlip}
+                            onChange={(e) => setSlipFile(e.target.files?.[0] || null)}
+                            className="block w-full text-xs text-[var(--text-main)] file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={!slipFile || isVerifyingSlip}
+                          onClick={handleUploadDepositSlip}
+                          className="w-full bg-[var(--accent-brown)] hover:bg-[var(--accent-dark)] disabled:opacity-50 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                        >
+                          {isVerifyingSlip ? (
+                            <>
+                              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                              กำลังตรวจสอบสลิป...
+                            </>
+                          ) : (
+                            "อัปโหลดและตรวจสอบสลิปมัดจำ"
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* กล่องที่ 2: สำเนาบัตรประชาชน */}
+                  <div className="bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-amber-200/80 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-bold text-sm text-[var(--text-main)]">2. สำเนาบัตรประชาชน</h3>
+                        <p className="text-xs text-[var(--text-muted)]">สำหรับจัดทำสัญญาห้องพัก</p>
+                      </div>
+                      {roomRequest.idCardUrl ? (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          แนบแล้ว ✓
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          รอแนบเอกสาร
+                        </span>
+                      )}
+                    </div>
+
+                    {roomRequest.idCardUrl ? (
+                      <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-3 text-xs text-emerald-800 flex items-center justify-between">
+                        <span>บันทึกสำเนาบัตรประชาชนแล้ว</span>
+                        <a href={roomRequest.idCardUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline text-emerald-700 hover:text-emerald-900">
+                          ดูเอกสาร
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 pt-1">
+                        <div>
+                          <label className="block text-xs font-semibold text-[var(--text-main)] mb-1">
+                            เลือกรูปถ่ายหรือสำเนาบัตรประชาชน:
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={uploading}
+                            onChange={(e) => setIdCardFile(e.target.files?.[0] || null)}
+                            className="block w-full text-xs text-[var(--text-main)] file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={!idCardFile || uploading}
+                          onClick={handleUploadIdCard}
+                          className="w-full bg-[var(--accent-brown)] hover:bg-[var(--accent-dark)] disabled:opacity-50 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                        >
+                          {uploading ? (
+                            <>
+                              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                              กำลังอัปโหลด...
+                            </>
+                          ) : (
+                            "อัปโหลดสำเนาบัตรประชาชน"
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Cancelled / Rejected State */}
+            {(roomRequest.status === "cancelled" || roomRequest.status === "rejected") && (
+              <div className="bg-red-50 border border-red-200 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs">
+                <div>
+                  <p className="font-bold text-red-900">คำขอจองห้องนี้สิ้นสุดลงแล้ว</p>
+                  <p className="text-red-700">{roomRequest.cancelReason || "ห้องพักอาจถูกยกเลิกเนื่องจากเกินกำหนดเวลาหรือผู้ดูแลปฏิเสธ"}</p>
+                </div>
+                <Link
+                  href="/tenant/room"
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-2 rounded-xl transition-all shadow-sm shrink-0"
+                >
+                  เลือกห้องใหม่
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal QR Code พร้อมเพย์ */}
+      {showQRModal && bankAccount?.qrImageUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl relative text-center">
+            <button
+              onClick={() => setShowQRModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-all"
+            >
+              ✕
+            </button>
+            <h3 className="font-bold text-lg text-[var(--text-main)]">QR Code ชำระเงินมัดจำ</h3>
+            <p className="text-xs text-[var(--text-muted)]">สแกนเพื่อโอนเงินผ่าน Mobile Banking</p>
+            <div className="flex justify-center p-2 bg-slate-50 rounded-2xl border border-slate-100">
+              <img src={bankAccount.qrImageUrl} alt="PromptPay QR" className="w-56 h-56 object-contain rounded-xl" />
+            </div>
+            <div className="text-xs text-slate-600">
+              พร้อมเพย์: <span className="font-bold text-slate-900">{bankAccount.promptPayNumber || "-"}</span>
+            </div>
+            <button
+              onClick={() => setShowQRModal(false)}
+              className="w-full bg-[var(--accent-brown)] text-white font-bold text-xs py-2.5 rounded-xl hover:bg-[var(--accent-dark)] transition-all"
+            >
+              ปิดหน้าต่าง
+            </button>
+          </div>
         </div>
       )}
 
