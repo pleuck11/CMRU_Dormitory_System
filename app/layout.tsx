@@ -33,6 +33,16 @@ export const metadata: Metadata = {
   description: "ระบบบริหารจัดการหอพักหยาหยี๋ออนไลน์ ค้นหาที่พักที่ให้ความรู้สึกเหมือนบ้าน ด้วยบรรยากาศที่อบอุ่น ร่มรื่น และปลอดภัย",
   keywords: ["หอพัก", "หอยาหยี๋", "ที่พักเปิดใหม่", "ที่พักแม่ริม", "หอพักแม่ริม", "หอพักใกล้มหาวิทยาลัยราชภัฏเชียงใหม่ แม่ริม", "yayee dormitory"],
   authors: [{ name: "Yayee Dormitory" }],
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+  },
   openGraph: {
     title: "Yayee Dormitory Management System",
     description: "ระบบบริหารจัดการหอพักหยาหยี๋ออนไลน์ ค้นหาที่พักที่ให้ความรู้สึกเหมือนบ้าน ด้วยบรรยากาศที่อบอุ่น",
