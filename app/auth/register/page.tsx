@@ -77,9 +77,18 @@ export default function Register() {
         createdAt: new Date().toISOString()
       });
 
-      // 4. ปิดการส่งอีเมลยืนยันชั่วคราว
-      // await sendEmailVerification(newUser, actionCodeSettings);
-      // await signOut(auth);
+      // 4. ส่งอีเมลยืนยันตัวตนผ่าน Firebase
+      const actionCodeSettings = {
+        url: window.location.origin + '/auth/login?verified=1',
+        handleCodeInApp: false,
+      };
+      try {
+        await sendEmailVerification(newUser, actionCodeSettings);
+      } catch (emailErr) {
+        console.error("Failed to send Firebase verification email:", emailErr);
+      }
+
+      await signOut(auth); // ออกจากระบบเพื่อให้ผู้ใช้ไปยืนยันอีเมลก่อน
 
       setVerificationSent(true);
     } catch (err: any) {
@@ -112,25 +121,27 @@ export default function Register() {
         <div className="w-full max-w-md relative z-10">
           <div className="glass-panel rounded-3xl px-8 py-12 text-center shadow-xl">
             <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <path d="M20 6L9 17l-5-5"/>
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <rect width="20" height="16" x="2" y="4" rx="2"/>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                 </svg>
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-[var(--text-main)] mb-3">สมัครสมาชิกสำเร็จ!</h2>
+            <h2 className="text-2xl font-bold text-[var(--text-main)] mb-3">รอดำเนินการยืนยันอีเมล</h2>
             <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-2">
-              สร้างบัญชีสำหรับอีเมล
+              ระบบได้ส่งลิงก์ยืนยันตัวตนไปที่อีเมล
             </p>
             <p className="font-semibold text-[var(--text-main)] text-sm mb-4">{formData.email}</p>
-            <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-8">
-              บัญชีของคุณพร้อมใช้งานแล้ว สามารถเข้าสู่ระบบได้ทันที
+            <p className="text-[var(--text-muted)] text-xs leading-relaxed mb-8">
+              กรุณาตรวจสอบกล่องจดหมาย (รวมถึงกล่องจดหมายขยะ/Spam)<br />
+              แล้วคลิกลิงก์ยืนยันตัวตนเพื่อเริ่มเข้าใช้งานระบบ
             </p>
             <Link
               href="/auth/login"
               className="w-full flex justify-center py-3 px-4 rounded-xl text-sm font-semibold glass-button"
             >
-              กลับไปหน้าเข้าสู่ระบบ
+              ไปยังหน้าเข้าสู่ระบบ
             </Link>
           </div>
         </div>

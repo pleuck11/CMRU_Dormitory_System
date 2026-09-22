@@ -51,7 +51,7 @@ export default function EmailVerificationWall() {
     // Reload user token เพื่อตรวจ emailVerified ใหม่
     user?.reload().then(() => {
       if (auth.currentUser?.emailVerified) {
-        router.refresh();
+        window.location.reload();
       }
     });
   };
