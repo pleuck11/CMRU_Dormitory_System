@@ -42,3 +42,14 @@ next-env.d.ts
 
 .vercel
 .env*.local
+
+# AI & Agent configurations (do not commit to git)
+.agents/
+.gemini/
+AGENTS.md
+GEMINI.md
+CLAUDE.md
+.claude/
+.cursor/
+.cursorrules
+.windsurfrules

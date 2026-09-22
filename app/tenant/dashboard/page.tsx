@@ -145,16 +145,20 @@ export default function TenantDashboard() {
           });
           setAnnouncements(annList);
 
-          // ตรวจสอบว่ามีประกาศใหม่ล่าสุดหรือไม่ และเคยกดรับทราบหรือยัง
+          // ตรวจสอบว่ามีประกาศใหม่ล่าสุดหรือไม่ และให้แสดงเฉพาะครั้งแรกที่เข้า
           if (annList.length > 0) {
             const latest = annList[0];
             setLatestAnnouncement(latest);
-            const dismissedId = localStorage.getItem(`dismissed_announcement_id_${user.uid}`);
 
-            // ถ้ายังไม่เคยกดปิดของประกาศตัวล่าสุดนี้ ให้เด้ง Popup ขึ้นมา
-            if (dismissedId !== latest.id) {
+            const userKey = user ? user.uid : "guest";
+            const dismissedId = localStorage.getItem(`dismissed_announcement_id_${userKey}`);
+            const hasShownThisSession = sessionStorage.getItem(`announcement_popup_shown_${userKey}`);
+
+            // ให้ขึ้นเฉพาะครั้งแรกที่เข้า: ยังไม่เคยกดปิดประกาศนี้ และยังไม่ได้แสดงในเซสชันนี้
+            if (dismissedId !== latest.id && !hasShownThisSession) {
               setSelectedAnnouncement(latest);
               setShowAnnouncementPopup(true);
+              sessionStorage.setItem(`announcement_popup_shown_${userKey}`, "true");
             }
           }
         }
@@ -194,16 +198,20 @@ export default function TenantDashboard() {
     fetchData();
   }, [user, authLoading]);
 
-  // 1. ฟังก์ชันเมื่อกดปุ่ม "รับทราบ" (บันทึก ID ลง localStorage เพื่อไม่ให้เด้งอีก)
+  // ฟังก์ชันบันทึกการรับทราบ/ปิดประกาศ (บันทึก ID ลง localStorage เพื่อไม่ให้เด้งซ้ำอีก)
   const handleAcknowledgeAnnouncement = () => {
-    if (latestAnnouncement && user) {
-      localStorage.setItem(`dismissed_announcement_id_${user.uid}`, latestAnnouncement.id);
+    if (latestAnnouncement) {
+      const userKey = user ? user.uid : "guest";
+      localStorage.setItem(`dismissed_announcement_id_${userKey}`, latestAnnouncement.id);
     }
     setShowAnnouncementPopup(false);
   };
 
-  // 2. ฟังก์ชันเมื่อกดกากบาท (ปิด Popup ชั่วคราว แต่พอกลับมาเข้าเว็บใหม่จะยังเด้งเหมือนเดิม)
   const handleCloseAnnouncement = () => {
+    if (latestAnnouncement) {
+      const userKey = user ? user.uid : "guest";
+      localStorage.setItem(`dismissed_announcement_id_${userKey}`, latestAnnouncement.id);
+    }
     setShowAnnouncementPopup(false);
   };
 
@@ -723,8 +731,14 @@ export default function TenantDashboard() {
           POPUP แสดงประกาศ (Modal)
       ====================================================== */}
       {mounted && showAnnouncementPopup && selectedAnnouncement && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-xl bg-[#FFFDF9] rounded-3xl shadow-2xl border border-[#F3E7DD] overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
+        <div
+          onClick={handleCloseAnnouncement}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-xl bg-[#FFFDF9] rounded-3xl shadow-2xl border border-[#F3E7DD] overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95"
+          >
             
             {/* Header Popup (Warm Coffee Brown Theme) */}
             <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#8B5E3C] via-[#9B6A45] to-[#734A2E] text-white shadow-sm">
@@ -743,7 +757,7 @@ export default function TenantDashboard() {
               <button
                 onClick={handleCloseAnnouncement}
                 className="p-1.5 rounded-full bg-white/15 hover:bg-white/30 text-white transition-colors cursor-pointer"
-                title="ปิดชั่วคราว"
+                title="ปิดประกาศ"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -793,7 +807,7 @@ export default function TenantDashboard() {
             <div className="flex items-center justify-between gap-3 px-6 py-4 bg-white/90 border-t border-[#F3E7DD]">
               <Link
                 href="/tenant/announcements"
-                onClick={() => setShowAnnouncementPopup(false)}
+                onClick={handleCloseAnnouncement}
                 className="text-xs font-bold text-[#8B5E3C] hover:text-[#734A2E] transition-colors flex items-center gap-1"
               >
                 <span>ดูประกาศทั้งหมด</span>
