@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
 import {
@@ -19,12 +20,15 @@ import {
   BellRing,
   Eye,
   Image as ImageIcon,
+  Users,
+  Globe,
 } from "lucide-react";
 
 interface AnnouncementItem {
   id: string;
   title: string;
   content: string;
+  target?: string;
   imageUrl?: string | null;
   createdAt?: any;
   updatedAt?: any;
@@ -50,7 +54,59 @@ export default function TenantAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [filterTarget, setFilterTarget] = useState<"all" | "public" | "tenant">("all");
   const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [mounted, setMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (viewingImage) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      const mainEl = document.querySelector("main");
+      if (mainEl) {
+        mainEl.style.overflow = "hidden";
+      }
+
+      const preventScroll = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+
+      window.addEventListener("wheel", preventScroll, { passive: false });
+      window.addEventListener("touchmove", preventScroll, { passive: false });
+      if (mainEl) {
+        mainEl.addEventListener("wheel", preventScroll, { passive: false });
+        mainEl.addEventListener("touchmove", preventScroll, { passive: false });
+      }
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") setViewingImage(null);
+      };
+      window.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        document.body.style.overflow = "";
+        document.documentElement.style.overflow = "";
+        if (mainEl) {
+          mainEl.style.overflow = "";
+          mainEl.removeEventListener("wheel", preventScroll);
+          mainEl.removeEventListener("touchmove", preventScroll);
+        }
+        window.removeEventListener("wheel", preventScroll);
+        window.removeEventListener("touchmove", preventScroll);
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      const mainEl = document.querySelector("main");
+      if (mainEl) mainEl.style.overflow = "";
+    }
+  }, [viewingImage]);
 
   const fetchAnnouncements = useCallback(async () => {
     try {
@@ -77,14 +133,20 @@ export default function TenantAnnouncementsPage() {
   }, [fetchAnnouncements]);
 
   const filteredAnnouncements = useMemo(() => {
-    if (!searchTerm.trim()) return announcements;
+    let list = announcements;
+    if (filterTarget === "public") {
+      list = list.filter((item) => item.target !== "tenant");
+    } else if (filterTarget === "tenant") {
+      list = list.filter((item) => item.target === "tenant");
+    }
+    if (!searchTerm.trim()) return list;
     const term = searchTerm.toLowerCase();
-    return announcements.filter(
+    return list.filter(
       (item) =>
         item.title?.toLowerCase().includes(term) ||
         item.content?.toLowerCase().includes(term)
     );
-  }, [announcements, searchTerm]);
+  }, [announcements, searchTerm, filterTarget]);
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-5xl mx-auto">
@@ -99,7 +161,7 @@ export default function TenantAnnouncementsPage() {
             กลับไปหน้าแดชบอร์ด
           </Link>
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--accent-brown)] to-[var(--accent-dark)] text-white shadow-md shadow-amber-900/15">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8B5E3C] to-[#734A2E] text-white shadow-md shadow-[#8B5E3C]/20">
               <Megaphone className="h-6 w-6" />
             </span>
             <div>
@@ -115,37 +177,79 @@ export default function TenantAnnouncementsPage() {
 
         {/* Badge จำนวนประกาศ */}
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200/80 px-3.5 py-1.5 text-xs font-semibold text-amber-800 shadow-sm">
-            <BellRing className="h-3.5 w-3.5 text-amber-600 animate-bounce" />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F3E7DD]/90 border border-[#E8D7CA] px-3.5 py-1.5 text-xs font-semibold text-[#8B5E3C] shadow-sm">
+            <BellRing className="h-3.5 w-3.5 text-[#8B5E3C] animate-bounce" />
             ประกาศทั้งหมด {announcements.length} รายการ
           </span>
         </div>
       </div>
 
-      {/* ช่องค้นหา */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="ค้นหาตามหัวข้อหรือเนื้อหาประกาศ..."
-          className="w-full rounded-2xl border border-[var(--glass-border)] bg-white/80 py-2.5 pl-10 pr-10 text-sm text-[var(--text-main)] placeholder:text-gray-400 focus:border-[var(--accent-brown)] focus:bg-white focus:outline-none focus:ring-4 focus:ring-amber-500/10 transition-all shadow-sm"
-        />
-        {searchTerm && (
+      {/* แถบตัวกรองและช่องค้นหา */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        {/* กลุ่มปุ่มตัวกรองเป้าหมาย */}
+        <div className="flex rounded-2xl bg-white/80 p-1 border border-[var(--glass-border)] text-xs font-medium shadow-xs">
           <button
-            onClick={() => setSearchTerm("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            type="button"
+            onClick={() => setFilterTarget("all")}
+            className={`px-3.5 py-2 rounded-xl transition-all ${
+              filterTarget === "all"
+                ? "bg-[#8B5E3C] text-white shadow-sm font-semibold"
+                : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
+            }`}
           >
-            <X className="h-4 w-4" />
+            ทั้งหมด
           </button>
-        )}
+          <button
+            type="button"
+            onClick={() => setFilterTarget("public")}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
+              filterTarget === "public"
+                ? "bg-emerald-600 text-white shadow-sm font-semibold"
+                : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
+            }`}
+          >
+            <Globe className="h-3.5 w-3.5" />
+            ประกาศทั่วไป
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterTarget("tenant")}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all ${
+              filterTarget === "tenant"
+                ? "bg-[#8B5E3C] text-white shadow-sm font-semibold"
+                : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
+            }`}
+          >
+            <Users className="h-3.5 w-3.5" />
+            เฉพาะผู้เช่า
+          </button>
+        </div>
+
+        {/* ช่องค้นหา */}
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="ค้นหาประกาศ..."
+            className="w-full rounded-2xl border border-[var(--glass-border)] bg-white/80 py-2 pl-10 pr-10 text-sm text-[var(--text-main)] placeholder:text-gray-400 focus:border-[#8B5E3C] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#8B5E3C]/10 transition-all shadow-xs"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* รายการประกาศ */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center rounded-3xl glass-panel p-16 text-center shadow-sm">
-          <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-brown)] mb-3" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#8B5E3C] mb-3" />
           <p className="text-sm text-[var(--text-muted)]">กำลังโหลดประกาศข่าวสาร...</p>
         </div>
       ) : filteredAnnouncements.length > 0 ? (
@@ -154,8 +258,8 @@ export default function TenantAnnouncementsPage() {
             <article
               key={item.id}
               className={`glass-panel rounded-3xl p-6 md:p-7 shadow-sm border transition-all hover:shadow-md ${
-                index === 0 && !searchTerm
-                  ? "border-2 border-amber-300/80 bg-gradient-to-br from-white/95 via-amber-50/40 to-orange-50/20"
+                index === 0 && !searchTerm && filterTarget === "all"
+                  ? "border-2 border-[#8B5E3C]/30 bg-gradient-to-br from-white/95 via-[#FAF6F2] to-[#F5EEE6]"
                   : "border-[var(--glass-border)] bg-white/80 hover:bg-white"
               }`}
             >
@@ -165,21 +269,32 @@ export default function TenantAnnouncementsPage() {
                     <h2 className="text-lg md:text-xl font-bold text-[var(--text-main)]">
                       {item.title}
                     </h2>
-                    {index === 0 && !searchTerm && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-600 animate-pulse" />
+                    {index === 0 && !searchTerm && filterTarget === "all" && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#F3E7DD] px-2.5 py-0.5 text-xs font-semibold text-[#8B5E3C] border border-[#E8D7CA]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#8B5E3C] animate-pulse" />
                         ล่าสุด
                       </span>
                     )}
+                    {item.target === "tenant" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#F5EBE1] px-2.5 py-0.5 text-xs font-semibold text-[#734A2E] border border-[#E5D5C5]">
+                        <Users className="h-3 w-3" />
+                        เฉพาะผู้เช่า
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                        <Globe className="h-3 w-3" />
+                        ประกาศทั่วไป
+                      </span>
+                    )}
                     {item.imageUrl && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 border border-amber-200/70">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#F3E7DD]/70 px-2.5 py-0.5 text-xs font-medium text-[#8B5E3C] border border-[#E8D7CA]">
                         <ImageIcon className="h-3 w-3" />
                         มีรูปภาพแนบ
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                    <Calendar className="h-3.5 w-3.5 text-amber-600" />
+                    <Calendar className="h-3.5 w-3.5 text-[#8B5E3C]" />
                     <span>เผยแพร่เมื่อ: {formatThaiDate(item.createdAt)}</span>
                     {item.updatedAt && (
                       <span>(แก้ไขเมื่อ: {formatThaiDate(item.updatedAt)})</span>
@@ -193,7 +308,7 @@ export default function TenantAnnouncementsPage() {
                 <div className="mt-4">
                   <div
                     onClick={() => setViewingImage(item.imageUrl || null)}
-                    className="relative group/img max-w-xl cursor-pointer overflow-hidden rounded-2xl border border-amber-100 bg-amber-50/30 shadow-xs"
+                    className="relative group/img max-w-xl cursor-pointer overflow-hidden rounded-2xl border border-[#EAE1D5] bg-[#FAF7F2] shadow-xs"
                   >
                     <img
                       src={item.imageUrl}
@@ -236,30 +351,42 @@ export default function TenantAnnouncementsPage() {
       )}
 
       {/* =====================================================
-          LightBox Preview Modal (รูปภาพขนาดเต็ม)
+          LightBox Preview Modal (รูปภาพขนาดเต็ม — ลอยอยู่ตรงกลางจอฝั่งขวาเสมอ ไม่เลื่อนตามการ Scroll)
       ====================================================== */}
-      {viewingImage && (
+      {mounted && viewingImage && createPortal(
         <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          className="fixed top-0 bottom-0 right-0 left-0 md:left-64 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 sm:p-6 animate-in fade-in duration-200 select-none overflow-hidden"
           onClick={() => setViewingImage(null)}
+          onWheel={(e) => {
+            e.stopPropagation();
+          }}
+          onTouchMove={(e) => {
+            e.stopPropagation();
+          }}
         >
-          <div className="relative max-w-4xl max-h-[90vh] flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => setViewingImage(null)}
-              className="absolute -top-11 right-0 p-2 text-white/80 hover:text-white transition-colors"
-              title="ปิด"
-            >
-              <X className="h-6 w-6" />
-            </button>
+          {/* ปุ่มปิดมุมขวาบนของพื้นที่จอฝั่งขวา */}
+          <button
+            type="button"
+            onClick={() => setViewingImage(null)}
+            className="absolute top-5 right-5 z-[100000] flex items-center justify-center w-11 h-11 rounded-full bg-white/20 hover:bg-white/35 text-white backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95"
+            title="ปิดรูปภาพ (ESC หรือคลิกพื้นที่ว่าง)"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {/* กรอบแสดงรูปภาพ จัดกลางจอฝั่งขวาพอดีเสมอ */}
+          <div
+            className="relative max-w-full max-h-[88vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
             <img
               src={viewingImage}
               alt="รูปภาพขนาดเต็ม"
-              className="max-h-[85vh] max-w-full rounded-2xl object-contain shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
+              className="max-h-[85vh] max-w-[calc(100vw-2rem)] md:max-w-[calc(100vw-18rem)] w-auto h-auto rounded-2xl object-contain shadow-2xl transition-transform"
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* สไตล์ Rich Text สำหรับเนื้อหาประกาศ */}

@@ -13,6 +13,7 @@ interface Announcement {
   title: string;
   content: string;
   imageUrl?: string | null;
+  target?: string;
   createdAt?: any;
   updatedAt?: any;
 }
@@ -722,23 +723,29 @@ export default function TenantDashboard() {
           POPUP แสดงประกาศ (Modal)
       ====================================================== */}
       {mounted && showAnnouncementPopup && selectedAnnouncement && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-amber-100 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-xl bg-[#FFFDF9] rounded-3xl shadow-2xl border border-[#F3E7DD] overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95">
             
-            {/* Header Popup (ปุ่มกากบาทเรียกใช้ handleCloseAnnouncement เพื่อปิดชั่วคราว) */}
-            <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white">
-              <div className="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m3 11 18-5v12L3 14v-3z"/>
-                  <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
-                </svg>
-                <h3 className="font-bold text-lg">ประกาศจากหอพัก</h3>
+            {/* Header Popup (Warm Coffee Brown Theme) */}
+            <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#8B5E3C] via-[#9B6A45] to-[#734A2E] text-white shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-white/15 backdrop-blur-xs border border-white/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m3 11 18-5v12L3 14v-3z"/>
+                    <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight text-white">ประกาศจากหอพัก</h3>
+                  <p className="text-[11px] text-white/80 font-medium">หอพักหยาหยี๋ (Yayee Dormitory)</p>
+                </div>
               </div>
               <button
                 onClick={handleCloseAnnouncement}
-                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+                className="p-1.5 rounded-full bg-white/15 hover:bg-white/30 text-white transition-colors cursor-pointer"
+                title="ปิดชั่วคราว"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -747,43 +754,54 @@ export default function TenantDashboard() {
 
             {/* Content Popup */}
             <div className="p-6 overflow-y-auto space-y-4">
-              <div>
-                <span className="text-xs text-amber-700 bg-amber-100/80 px-2.5 py-1 rounded-full font-semibold">
-                  เผยแพร่เมื่อ: {formatThaiDate(selectedAnnouncement.createdAt)}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 text-xs text-[#8B5E3C] bg-[#F3E7DD]/90 px-3 py-1 rounded-full font-semibold border border-[#E8D7CA]">
+                  📅 เผยแพร่เมื่อ: {formatThaiDate(selectedAnnouncement.createdAt)}
                 </span>
-                <h2 className="text-xl font-bold text-gray-900 mt-2">
-                  {selectedAnnouncement.title}
-                </h2>
+                {selectedAnnouncement.target === "tenant" ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-[#F5EBE1] text-[#734A2E] border border-[#E5D5C5]">
+                    🔒 สำหรับผู้เช่า
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-[#EBF3EA] text-[#2D6A4F] border border-[#CFE4CD]">
+                    🌐 ประกาศทั่วไป
+                  </span>
+                )}
               </div>
 
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#3A2D23] tracking-tight leading-snug">
+                {selectedAnnouncement.title}
+              </h2>
+
               {selectedAnnouncement.imageUrl && (
-                <div className="rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 flex justify-center">
+                <div className="rounded-2xl overflow-hidden border border-[#EAE1D5] bg-[#FAF7F2] flex justify-center p-2">
                   <img
                     src={selectedAnnouncement.imageUrl}
                     alt={selectedAnnouncement.title}
-                    className="max-h-80 w-auto object-contain"
+                    className="max-h-80 w-auto object-contain rounded-xl"
                   />
                 </div>
               )}
 
               <div
-                className="text-sm text-gray-700 leading-relaxed bg-gray-50/70 p-4 rounded-2xl border border-gray-100"
+                className="text-sm text-[#3A2D23] leading-relaxed bg-[#FAF7F2] p-5 rounded-2xl border border-[#EAE1D5] announcement-html-content"
                 dangerouslySetInnerHTML={{ __html: selectedAnnouncement.content || "" }}
               />
             </div>
 
-            {/* Footer Popup (ปุ่มรับทราบเรียกใช้ handleAcknowledgeAnnouncement เพื่อบันทึกไม่ให้เด้งอีก) */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-gray-50 border-t border-gray-100">
+            {/* Footer Popup */}
+            <div className="flex items-center justify-between gap-3 px-6 py-4 bg-white/90 border-t border-[#F3E7DD]">
               <Link
                 href="/tenant/announcements"
                 onClick={() => setShowAnnouncementPopup(false)}
-                className="text-xs font-semibold text-amber-700 hover:text-amber-800 mr-auto"
+                className="text-xs font-bold text-[#8B5E3C] hover:text-[#734A2E] transition-colors flex items-center gap-1"
               >
-                ดูประกาศทั้งหมด
+                <span>ดูประกาศทั้งหมด</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
               </Link>
               <button
                 onClick={handleAcknowledgeAnnouncement}
-                className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm shadow-sm transition-colors"
+                className="bg-[#8B5E3C] hover:bg-[#734A2E] text-white px-7 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-[#8B5E3C]/20 transition-all active:scale-[0.98] cursor-pointer"
               >
                 รับทราบ
               </button>
